@@ -14,6 +14,9 @@ paths:
   figures_dir: data/processed/figures
   graphs_dir: data/processed/graphs
   debug_dir: data/processed/debug
+  docs_dir: data/processed/docs            # per-document manifest (pages, sizes, image paths)
+  pages_dir: data/processed/pages          # demo-PDF pages rendered at parsing.image_dpi
+  combined_pdfs_dir: data/processed/mpdocvqa_pdfs   # MP-DocVQA page PNGs joined into one PDF
   indexes_dir: data/indexes
   eval_dir: eval
   results_dir: eval/results
@@ -26,8 +29,13 @@ dataset:
 
 parsing:
   ocr: true
-  image_dpi: 144                   # page render DPI; bboxes are in pixels at this DPI
+  ocr_backend: onnxruntime         # RapidOCR backend: onnxruntime | torch
+  image_dpi: 144                   # demo PDFs: render DPI; their bboxes are in pixels at this DPI
+  mpdocvqa_dpi: 200                # nominal DPI used to size PDF pages built from MP-DocVQA PNGs
+                                   # (bboxes for MP-DocVQA are in original PNG pixels)
   max_text_form_tokens: 512
+  caption_max_gap: 0.15            # nearest-caption fallback: max vertical gap as a fraction of page height
+  num_threads: 8
 
 models:
   bge: BAAI/bge-base-en-v1.5

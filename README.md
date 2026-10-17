@@ -70,6 +70,28 @@ Never turn off certificate verification.
 
 Everything under `data/` is gitignored.
 
+## Ingest (parse, serialize, graph)
+
+```powershell
+# a few chosen MP-DocVQA documents
+.venv/Scripts/python -m scripts.ingest --source mpdocvqa --docs jjvg0227 yxvw0217 ttwl0228
+# all downloaded MP-DocVQA documents (long run: about 18 s per page on CPU with onnxruntime, about 5 h for 1,060 pages; skips documents already done)
+.venv/Scripts/python -m scripts.ingest --source mpdocvqa
+# demo PDFs in data/raw/pdfs/
+.venv/Scripts/python -m scripts.ingest --source pdf
+# debug overlays -> data/processed/debug/{doc_id}/page_{n}.png
+.venv/Scripts/python -m scripts.visualize_components --doc jjvg0227
+```
+
+Outputs:
+- `data/processed/components.jsonl`
+- `data/processed/tables/*.parquet`
+- `data/processed/figures/*.png`
+- `data/processed/graphs/{doc_id}.pkl`
+- `data/processed/docs/{doc_id}.json` (page manifest)
+
+Re-run with `--force` to re-parse documents, or with `--reserialize` to recompute only `text_form` and the graphs. The first run downloads the Docling layout/table models (HF cache) and the RapidOCR models (into the rapidocr package folder in `.venv`).
+
 ## Tests
 
 ```powershell

@@ -7,6 +7,7 @@
 docling
 pymupdf
 pillow
+onnxruntime          # faster CPU backend for Docling's RapidOCR (config parsing.ocr_backend)
 
 # Data and graph
 numpy

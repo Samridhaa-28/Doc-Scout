@@ -45,3 +45,33 @@ Full report: [docs/reports/P1_REPORT.md](reports/P1_REPORT.md)
 - **Retrieval scope:** search the whole saved document, not the question's `page_ids` window.
 - **Question types:** join with `lmms-lab/DocVQA` val on `questionId` in P5.
 - **Avast SSL workaround** (`SSL_CERT_FILE` pointing at a certifi + Windows-roots bundle) is local to this machine only; nothing in the repo depends on it.
+
+## P2 (approved for MP-DocVQA, 2026-10-17): parsing, serialization, graph
+Full report: [docs/reports/P2_REPORT.md](reports/P2_REPORT.md)
+
+### What exists now
+- `src/docscout/ingestion/parser.py`: Docling (layout + TableFormer + **RapidOCR on the onnxruntime backend**, config `parsing.ocr_backend`). MP-DocVQA PNGs are joined into one PDF (`data/processed/mpdocvqa_pdfs/`). Docling items map to paragraph / heading / table / figure / caption. Tables are saved to parquet, figures are cropped to PNG. Captions are linked (Docling refs first, nearest caption as fallback; "Page N" markers relabelled). Each document gets a page manifest.
+- `src/docscout/ingestion/serializer.py`: `text_form` per type (table = title above + caption + columns + row headers + first 3 rows; figure = caption + nearest paragraph + inner text), truncated to about 512 tokens, never empty.
+- `src/docscout/graph/builder.py`: DiGraph Document → Page → Section(heading, page) → Block. Edge `rel` values: `parent_child`, `sibling`, `caption_of`. Saved as pickle, with helpers.
+- `scripts/ingest.py` (`--source mpdocvqa|pdf`, `--limit`, `--docs`, `--force` with per-document cleanup, `--reserialize`), `scripts/visualize_components.py`, `scripts/check_components.py`.
+- Tests: 28 passing.
+
+### Key interfaces
+- `components.jsonl`: one `Component` per line, unique ids.
+  - `bbox` is top-left, in pixels of the displayed page image (MP-DocVQA: original PNG; PDF: rendered at `parsing.image_dpi`).
+  - `meta`: `docling_label`, `docling_label_original`, `regions`, `caption_id` / `caption_of`, `n_rows` / `n_cols`, `inner_text`.
+- `parse_mpdocvqa(doc_id)` and `parse_pdf(path)` return `(components, stats)`. `serialize_components(comps)`; `build_graph(comps)`; `load_graph(doc_id)`, `parent_section`, `siblings`, `caption_of`, `linked_component`, `path_to_root`; `load_manifest(doc_id)`.
+- Files:
+  - `data/processed/{tables,figures}/{component_id}.{parquet,png}`
+  - `data/processed/graphs/{doc_id}.pkl`
+  - `data/processed/docs/{doc_id}.json`
+
+### Data state
+- **Ingested: 3 MP-DocVQA documents** (`jjvg0227`, `yxvw0217`, `ttwl0228`): 11 pages, 108 components (85 paragraphs, 10 headings, 6 tables, 6 figures, 1 caption).
+- **Full ingest pending:** about 5 h at 17.8 s/page, resumable: `.venv/Scripts/python -m scripts.ingest --source mpdocvqa`.
+- **Demo-PDF test pending** (moved into P3): `data/raw/pdfs/` was empty.
+
+### Decisions
+- OCR backend is onnxruntime: 27% faster than torch, with identical text and bboxes on all 108 components.
+- Page headers and footers are kept as paragraphs (DocVQA answers are often in them).
+- Multi-region Docling items keep every box in `meta.regions`.
