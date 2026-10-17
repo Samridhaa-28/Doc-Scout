@@ -75,3 +75,27 @@ Full report: [docs/reports/P2_REPORT.md](reports/P2_REPORT.md)
 - OCR backend is onnxruntime: 27% faster than torch, with identical text and bboxes on all 108 components.
 - Page headers and footers are kept as paragraphs (DocVQA answers are often in them).
 - Multi-region Docling items keep every box in `meta.regions`.
+
+## P3 (approved, 2026-10-18): indexes (BM25, dense, CLIP)
+Full report: [docs/reports/P3_REPORT.md](reports/P3_REPORT.md)
+
+### What exists now
+- `src/docscout/indexing/`:
+  - `base.py`: `BaseIndex` interface, `file_fingerprint`
+  - `bm25_index.py`: tokenizer + BM25Okapi
+  - `dense_index.py`: sentence-transformers + FAISS IndexFlatIP; the BGE instruction is applied to queries only; models load from the cache first
+  - `visual_index.py`: CLIP clip-ViT-B-32 over figure crops
+  - `build_all.py`: layout, build/load, staleness
+- `scripts/build_indexes.py` (`--rebuild`; exit 2 when stale) and `scripts/search_cli.py` (`--branch --retriever --doc --k --target --show-encoded`).
+- 10 indexes in `data/indexes/{text,table,figure}/{bm25,dense_bge,dense_minilm}` plus `figure/clip`, built over 4 MP-DocVQA documents (111 components; `pybv0228` was added to test staleness).
+- Tests: 36 passing.
+
+### Key interfaces
+- `load_index(branch, retriever)` → `idx.search(query, top_k, doc_id=None) -> [(component_id, score)]`. The doc filter is exact (per-document rows). `DenseIndex.encode_query()` and `search_vector()` let a query be encoded once and reused.
+- Score scales: BM25 ≥ 0 and unbounded; dense cosine about 0.2–0.9; CLIP about 0.2–0.35.
+- Each index's `meta.json` stores the fingerprint of `components.jsonl` (lines + sha256). After more ingest, run `build_indexes --rebuild`.
+
+### Limitations and decisions
+- **CLIP "bar graph" limitation:** Docling splits some scanned charts into tiny noisy fragments, and dark full-page covers get detected as figures. CLIP scores cluster within about 0.02, so "bar graph" ranked a black cover page first. Clear images work ("line graph of temperature", "company logo"). Not tuned.
+- **Demo PDF deferred to P6/P7:** `data/raw/pdfs/` is still empty.
+- Model downloads: BGE 418.7 MB and CLIP 578.5 MB (MiniLM was already cached).

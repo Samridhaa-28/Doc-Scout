@@ -92,6 +92,19 @@ Outputs:
 
 Re-run with `--force` to re-parse documents, or with `--reserialize` to recompute only `text_form` and the graphs. The first run downloads the Docling layout/table models (HF cache) and the RapidOCR models (into the rapidocr package folder in `.venv`).
 
+## Indexes (BM25, dense BGE / MiniLM, CLIP)
+
+```powershell
+.venv/Scripts/python -m scripts.build_indexes            # builds missing indexes, loads up-to-date ones
+.venv/Scripts/python -m scripts.build_indexes --rebuild  # required after more documents are ingested
+.venv/Scripts/python -m scripts.search_cli "population in poverty" --branch table --retriever bm25 --doc jjvg0227
+.venv/Scripts/python -m scripts.search_cli "chart" --branch figure --retriever clip --k 3
+```
+
+- Indexes are stored in `data/indexes/{text,table,figure}/{bm25,dense_bge,dense_minilm,clip}/`.
+- Each index stores a fingerprint of `components.jsonl`. When the file changes, both scripts warn that the indexes are stale.
+- Models load from the HF cache without network access once they have been downloaded.
+
 ## Tests
 
 ```powershell
