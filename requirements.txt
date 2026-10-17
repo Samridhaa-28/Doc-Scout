@@ -1,0 +1,41 @@
+# Install torch CPU FIRST (not listed here):
+#   .venv/Scripts/python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+# Then: .venv/Scripts/python -m pip install -r requirements.txt
+# Then: .venv/Scripts/python -m pip install -e .
+
+# Parsing
+docling
+pymupdf
+pillow
+
+# Data and graph
+numpy
+pandas
+networkx
+datasets
+rapidfuzz
+
+# Retrieval
+rank-bm25
+sentence-transformers
+faiss-cpu
+
+# LLM
+groq
+python-dotenv
+
+# Backend and UI
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+requests
+streamlit
+
+# Evaluation and dev
+ranx
+scikit-learn
+matplotlib
+tqdm
+pyyaml
+pytest

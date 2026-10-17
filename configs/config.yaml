@@ -1,0 +1,96 @@
+# DocScout-X configuration. All settings live here; secrets live in .env.
+# Paths are relative to the repo root and resolved to absolute paths by docscout.config.
+
+paths:
+  data_dir: data
+  raw_dir: data/raw
+  mpdocvqa_dir: data/raw/mpdocvqa
+  mpdocvqa_images_dir: data/raw/mpdocvqa/images
+  questions_file: data/raw/mpdocvqa/questions.jsonl
+  pdfs_dir: data/raw/pdfs
+  processed_dir: data/processed
+  components_file: data/processed/components.jsonl
+  tables_dir: data/processed/tables
+  figures_dir: data/processed/figures
+  graphs_dir: data/processed/graphs
+  debug_dir: data/processed/debug
+  indexes_dir: data/indexes
+  eval_dir: eval
+  results_dir: eval/results
+  reports_dir: docs/reports
+
+dataset:
+  hf_name: lmms-lab/MP-DocVQA      # fallback: rubentito/mp-docvqa
+  split: val
+  subset_size: 150                 # number of documents for the eval subset
+
+parsing:
+  ocr: true
+  image_dpi: 144                   # page render DPI; bboxes are in pixels at this DPI
+  max_text_form_tokens: 512
+
+models:
+  bge: BAAI/bge-base-en-v1.5
+  minilm: sentence-transformers/all-MiniLM-L6-v2
+  clip: clip-ViT-B-32
+  cross_encoder: cross-encoder/ms-marco-MiniLM-L-6-v2
+  bge_query_instruction: "Represent this sentence for searching relevant passages: "
+  device: cpu
+  batch_size: 32
+
+branches:
+  text: [paragraph, heading, caption]
+  table: [table]
+  figure: [figure]
+
+retrieval:
+  top_k:                            # candidates taken from each retriever per branch
+    bm25: 50
+    dense_bge: 50
+    dense_minilm: 50
+    clip: 20
+  rerank_top_n: 30
+  final_top_k: 5
+
+fusion:
+  method: weighted_sum              # weighted_sum (main) | rrf (comparison)
+  normalization: minmax             # minmax | zscore
+  rrf_k: 60
+  retriever_weights:                # within a branch, after normalization
+    bm25: 0.4
+    dense: 0.6
+    clip: 0.5                       # figure branch only
+  branch_weights:                   # soft routing: all branches searched, label sets weights
+    textual:   {text: 0.6, table: 0.25, figure: 0.15}
+    numerical: {text: 0.3, table: 0.6,  figure: 0.1}
+    visual:    {text: 0.25, table: 0.15, figure: 0.6}
+
+classifier:
+  use_llm: true
+  rule_confidence: 0.9              # rules below this confidence defer to the LLM
+
+feedback:
+  step: 0.05                        # added to rerank score per preference count
+  cap: 0.2                          # max absolute boost/penalty
+
+llm:
+  provider: groq
+  model: llama-3.3-70b-versatile    # overridden by LLM_MODEL in .env if set
+  temperature: 0.0
+  max_tokens: 512
+  max_retries: 3
+  cache_path: data/processed/llm_cache.jsonl
+
+eval:
+  k_values: [1, 5, 10]
+  metrics: [recall@1, recall@5, recall@10, mrr, ndcg@10]
+  subset_size: 150
+  dev_fraction: 0.2
+  anls_threshold: 0.5
+  fuzzy_match_threshold: 90
+  seed: 42
+
+api:
+  host: 127.0.0.1
+  port: 8000
+  base_url: http://127.0.0.1:8000

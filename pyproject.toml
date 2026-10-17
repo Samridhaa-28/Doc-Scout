@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docscout"
+version = "0.1.0"
+description = "DocScout-X: query-aware, fine-grained evidence retrieval from long documents"
+readme = "README.md"
+requires-python = ">=3.10"
+# Runtime dependencies are managed in requirements.txt (torch CPU must be installed first).
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
