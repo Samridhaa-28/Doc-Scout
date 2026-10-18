@@ -1,7 +1,7 @@
-"""Tests for the pure helpers in scripts.download_data (no network)."""
+"""Tests for the pure helpers in docscout.dataset.mpdocvqa (no network)."""
 import pytest
 
-from scripts.download_data import page_number, parse_listish, resolve_fields
+from docscout.dataset.mpdocvqa import page_number, parse_listish, resolve_fields
 
 
 def test_parse_listish_string_and_native():

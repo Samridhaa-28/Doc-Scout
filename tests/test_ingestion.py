@@ -181,7 +181,7 @@ def test_graph_structure_and_rels(tmp_path: Path):
 # ------------------------------------------------------------------ data check (runs only after ingest)
 
 def test_duplicate_ids_detected():
-    from scripts.check_components import duplicate_ids
+    from docscout.ingestion.validate import duplicate_ids
 
     assert duplicate_ids(["a", "b", "a", "c", "a"]) == {"a": 3}
     assert duplicate_ids(["a", "b"]) == {}
@@ -189,7 +189,7 @@ def test_duplicate_ids_detected():
 
 def test_force_cleanup_removes_old_lines_and_files(tmp_path: Path):
     from docscout.schema import read_components, write_components
-    from scripts.ingest import clean_doc_outputs, drop_docs
+    from docscout.ingestion.runner import clean_doc_outputs, drop_docs
 
     paths = {k: tmp_path / k for k in ("tables_dir", "figures_dir", "pages_dir", "debug_dir", "graphs_dir", "docs_dir")}
     for d in paths.values():
@@ -214,9 +214,9 @@ def test_force_cleanup_removes_old_lines_and_files(tmp_path: Path):
 
 
 def test_processed_components_valid():
-    """Data check over components.jsonl: every check in scripts.check_components must pass."""
+    """Data check over components.jsonl: every check in docscout.ingestion.validate must pass."""
     from docscout.config import get_config
-    from scripts.check_components import validate
+    from docscout.ingestion.validate import validate
 
     path = get_config()["paths"]["components_file"]
     if not path.exists():

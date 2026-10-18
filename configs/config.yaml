@@ -30,6 +30,9 @@ dataset:
 parsing:
   ocr: true
   ocr_backend: onnxruntime         # RapidOCR backend: onnxruntime | torch
+  pdf_backend:                     # Docling PDF backend per source: pypdfium2 | docling_parse
+    mpdocvqa: pypdfium2            # image-only joined PDFs: no text layer; docling_parse crashed natively on zrhw0228
+    pdf: docling_parse             # digital demo PDFs: keep Docling's default text-cell parser
   image_dpi: 144                   # demo PDFs: render DPI; their bboxes are in pixels at this DPI
   mpdocvqa_dpi: 200                # nominal DPI used to size PDF pages built from MP-DocVQA PNGs
                                    # (bboxes for MP-DocVQA are in original PNG pixels)

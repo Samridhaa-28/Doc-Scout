@@ -105,6 +105,18 @@ Re-run with `--force` to re-parse documents, or with `--reserialize` to recomput
 - Each index stores a fingerprint of `components.jsonl`. When the file changes, both scripts warn that the indexes are stale.
 - Models load from the HF cache without network access once they have been downloaded.
 
+## Evaluation (within-document retrieval)
+
+```powershell
+.venv/Scripts/python -m eval.select_eval_docs --target-pages 250 --max-pages 20   # writes data/raw/mpdocvqa/eval_docs.txt
+.venv/Scripts/python -m scripts.ingest --source mpdocvqa --docs-file data/raw/mpdocvqa/eval_docs.txt --max-minutes 12   # repeat until 49/49
+.venv/Scripts/python -m scripts.build_indexes --rebuild
+.venv/Scripts/python -m eval.build_qrels
+.venv/Scripts/python -m eval.run_eval --systems bm25_all dense_minilm_all dense_bge_all
+```
+
+Results are written to `eval/results/summary.md`. The per-system JSON files are gitignored.
+
 ## Tests
 
 ```powershell
@@ -114,11 +126,16 @@ Re-run with `--force` to re-parse documents, or with `--reserialize` to recomput
 ## Project layout
 
 ```
-configs/config.yaml        all settings (paths, models, retrieval, fusion, feedback, llm, eval)
-src/docscout/              package: config, schema, ingestion, graph, indexing, query, retrieval,
-                           rerank, localization, context, reasoning, evidence, feedback
-scripts/                   CLI entry points (python -m scripts.NAME)
-eval/                      qrels, metrics, evaluation runs, results/
-api/, ui/                  FastAPI backend and Streamlit UI
+configs/config.yaml        all settings (paths, models, parsing backends, retrieval, fusion, feedback, llm, eval)
+src/docscout/              the package: all reusable logic
+  config.py, schema.py, env_check.py
+  dataset/                 MP-DocVQA download (mpdocvqa.py) and subset stats (explore.py)
+  ingestion/               parser (Docling), serializer, runner (crash-isolated ingest), validate, visualize
+  graph/                   document-structure graph
+  indexing/                BM25 / dense / CLIP indexes, build_all (build, staleness, report), search
+  query/ retrieval/ rerank/ localization/ context/ reasoning/ evidence/ feedback/   (later phases)
+scripts/                   thin command-line entry points only (argparse + one call): python -m scripts.NAME
+eval/                      evaluation-only code: select_eval_docs, build_qrels, metrics, run_eval, results/
+api/, ui/                  FastAPI backend and Streamlit UI (later phases)
 tests/                     pytest
 ```

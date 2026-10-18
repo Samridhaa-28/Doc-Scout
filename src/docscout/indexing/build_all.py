@@ -142,3 +142,32 @@ def load_index(branch: str, retriever: str, cfg: Optional[Dict[str, Any]] = None
         if stale:
             log.warning(stale_warning(stale))
     return index_class(retriever).load(out)
+
+
+def build_report(rebuild: bool = False, cfg: Optional[Dict[str, Any]] = None) -> int:
+    """Build or load all indexes and print a summary table. Returns 0, 1 (no components) or 2 (stale)."""
+    from collections import Counter
+
+    from docscout.schema import iter_jsonl
+
+    cfg = cfg or get_config()
+    comp_path = cfg["paths"]["components_file"]
+    if not comp_path.exists():
+        print(f"{comp_path} not found. Run scripts.ingest first.")
+        return 1
+    rows = list(iter_jsonl(comp_path))
+    print(f"components.jsonl: {len(rows)} components, {len({r['doc_id'] for r in rows})} documents")
+    print("by type:", dict(Counter(r["type"] for r in rows)))
+    res = build_all(rebuild=rebuild, cfg=cfg)
+    print(f"fingerprint: lines={res['fingerprint']['lines']} sha256={res['fingerprint']['sha256'][:16]}...")
+    if res["stale"]:
+        print(stale_warning(res["stale"]))
+        return 2
+    print(f"\n{'branch':<8}{'retriever':<14}{'n':>5}  {'action':<22}{'secs':>9}{'size':>12}")
+    total = 0.0
+    for r in res["rows"]:
+        size = f"{r.get('size_bytes', 0) / 1024:.1f} KB"
+        print(f"{r['branch']:<8}{r['retriever']:<14}{r['n']:>5}  {r['action']:<22}{r['secs']:>9.3f}{size:>12}")
+        total += r["secs"]
+    print(f"total: {total:.1f}s | indexes in {cfg['paths']['indexes_dir'].relative_to(cfg['repo_root'])}")
+    return 0

@@ -99,3 +99,52 @@ Full report: [docs/reports/P3_REPORT.md](reports/P3_REPORT.md)
 - **CLIP "bar graph" limitation:** Docling splits some scanned charts into tiny noisy fragments, and dark full-page covers get detected as figures. CLIP scores cluster within about 0.02, so "bar graph" ranked a black cover page first. Clear images work ("line graph of temperature", "company logo"). Not tuned.
 - **Demo PDF deferred to P6/P7:** `data/raw/pdfs/` is still empty.
 - Model downloads: BGE 418.7 MB and CLIP 578.5 MB (MiniLM was already cached).
+
+## P4 (approved, 2026-10-18): eval set, qrels, baselines + folder structure
+Full report: [docs/reports/P4_REPORT.md](reports/P4_REPORT.md) · results: [eval/results/summary.md](../eval/results/summary.md)
+
+### Evaluation set
+- `data/raw/mpdocvqa/eval_docs.txt`, from `eval.select_eval_docs`: 150 documents in saved order, the 4 already-ingested ones kept, documents with > 20 pages skipped, stopping at ~250 pages.
+  - Result: **49 documents, 250 pages, 293 questions** (246 on documents with ≥ 2 pages), 12 single-page documents, pages per document 1 / 5.10 / 20.
+- All 49 are ingested: 2,976 components (2,380 paragraphs, 339 headings, 96 tables, 120 figures, 41 captions). `check_components` passes; one blank page is reported as info (`hqgb0228` p19).
+- The 10 indexes are rebuilt on it. The full 150-document ingest is still not done (not needed for evaluation).
+
+### Decisions
+- **pypdfium2 + isolation.** docling-parse crashed natively (0xC0000005 in `pdf_parsers.pyd`) after 7 documents in one process; the crash was not reproducible in a fresh process.
+  - MP-DocVQA joined PDFs (image-only) now use the **pypdfium2** backend (`parsing.pdf_backend`). Demo PDFs keep docling_parse.
+  - Every document is parsed in a **spawned child worker**. A crash or timeout is logged to `data/processed/ingest_failures.jsonl`, the worker restarts and the run continues.
+- **Qrels:**
+  - Page relevance = `answer_page`.
+  - Component relevance: the text, `text_form` or a table cell on the answer page contains a gold answer. Normalized to `[a-z0-9]`; `partial_ratio ≥ 90` only when the text is at least as long as the answer, else `ratio`; short answers (≤ 3 chars) need an exact word or cell.
+  - Coverage 94.9%. This is genuine for extractive DocVQA answers; an audit removed a matching bug.
+- **Metrics:**
+  - Page metrics on all questions and on documents with ≥ 2 pages (the main number); component metrics on the 278 questions that have a relevant component.
+  - Random baseline = mean(1/num_pages).
+  - **BM25 page runs stay unpadded:** pages with no term match are not ranked.
+
+### Key numbers (page level, documents with ≥ 2 pages; component level on 278 questions)
+| system | page R@1 | page R@5 | page MRR | comp R@1 | comp R@10 | ms/query |
+|---|---|---|---|---|---|---|
+| random | 0.246 | 0.770 | 0.473 | - | - | - |
+| bm25_all | 0.593 | 0.793 | 0.679 | 0.380 | 0.633 | 0.2 |
+| dense_minilm_all | 0.537 | 0.902 | 0.696 | 0.244 | 0.729 | 9.4 |
+| dense_bge_all | 0.606 | 0.907 | 0.738 | 0.331 | 0.726 | 35.4 |
+
+### Folder tidy-up (after P4)
+`scripts/` now holds only thin entry points (argparse + one call); the logic moved into the package and `eval/`. The commands are unchanged except `select_eval_docs`.
+
+| was | now |
+|---|---|
+| `scripts/download_data.py` (logic) | `src/docscout/dataset/mpdocvqa.py` → `download_subset()` |
+| `scripts/explore_data.py` (logic) | `src/docscout/dataset/explore.py` → `explore()` |
+| `scripts/ingest.py` (worker, isolation, cleanup, failures, run loop) | `src/docscout/ingestion/runner.py` → `run_ingest()`, `Worker`, `failed_doc_ids()`, `clean_doc_outputs()`, `drop_docs()` |
+| `scripts/check_components.py` (validation) | `src/docscout/ingestion/validate.py` → `validate()`, `report()`, `duplicate_ids()` |
+| `scripts/visualize_components.py` (drawing) | `src/docscout/ingestion/visualize.py` → `render_doc()`, `draw_page()` |
+| `scripts/build_indexes.py` (report) | `src/docscout/indexing/build_all.py` → `build_report()` |
+| `scripts/search_cli.py` (search loop) | `src/docscout/indexing/search.py` → `search_report()` |
+| `scripts/check_env.py` (library list) | `src/docscout/env_check.py` → `check_env()` |
+| `scripts/select_eval_docs.py` | `eval/select_eval_docs.py` (run as `python -m eval.select_eval_docs`) |
+
+### Pending
+- **Demo PDF:** deferred again (not added in P4).
+- `.env` with `LLM_API_KEY` exists locally (gitignored) for P5.

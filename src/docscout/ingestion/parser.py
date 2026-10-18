@@ -128,8 +128,17 @@ def render_pdf_pages(pdf_path: Path, out_dir: Path, dpi: int) -> List[Tuple[int,
     return out
 
 
-def build_converter(cfg: Optional[Dict[str, Any]] = None):
-    """Docling DocumentConverter for PDFs with RapidOCR (backend = parsing.ocr_backend), table structure, CPU."""
+def pdf_backend_for(source: str, cfg: Optional[Dict[str, Any]] = None) -> str:
+    """Configured Docling PDF backend name for a source ('mpdocvqa' | 'pdf')."""
+    cfg = cfg or get_config()
+    return (cfg["parsing"].get("pdf_backend") or {}).get(source, "docling_parse")
+
+
+def build_converter(cfg: Optional[Dict[str, Any]] = None, backend: str = "docling_parse"):
+    """Docling DocumentConverter for PDFs with RapidOCR (backend = parsing.ocr_backend), table structure, CPU.
+
+    `backend`: 'docling_parse' (Docling default) or 'pypdfium2' (PyPdfiumDocumentBackend).
+    """
     from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
     from docling.datamodel.base_models import InputFormat
     from docling.datamodel.pipeline_options import PdfPipelineOptions, RapidOcrOptions
@@ -145,7 +154,16 @@ def build_converter(cfg: Optional[Dict[str, Any]] = None):
     opts.generate_page_images = False
     opts.generate_picture_images = False
     opts.accelerator_options = AcceleratorOptions(device=AcceleratorDevice.CPU, num_threads=int(p.get("num_threads", 8)))
-    return DocumentConverter(format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=opts)})
+    fmt = PdfFormatOption(pipeline_options=opts)
+    if backend == "pypdfium2":
+        from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+
+        fmt = PdfFormatOption(pipeline_options=opts, backend=PyPdfiumDocumentBackend)
+    elif backend != "docling_parse":
+        raise ValueError(f"unknown pdf backend {backend!r}")
+    conv = DocumentConverter(format_options={InputFormat.PDF: fmt})
+    conv.docscout_backend = backend  # recorded in each manifest's parse_stats
+    return conv
 
 
 def _table_dataframe(item, doc):
@@ -440,13 +458,14 @@ def parse_pdf(pdf_path: Path, doc_id: Optional[str] = None, converter=None, cfg=
 
 
 def _parse(pdf_path: Path, doc_id: str, pages: Dict[int, PageInfo], source: str, converter, cfg) -> Tuple[List[Component], Dict[str, Any]]:
-    converter = converter or build_converter(cfg)
+    converter = converter or build_converter(cfg, backend=pdf_backend_for(source, cfg))
     try:
         doc, status, errors = convert_pdf(converter, pdf_path)
     except Exception as e:  # noqa: BLE001 - one bad document must not stop ingestion
         log.error("%s: conversion crashed: %s: %s", doc_id, type(e).__name__, e)
         doc, status, errors = None, "failure", [f"{type(e).__name__}: {e}"]
-    stats: Dict[str, Any] = {"status": status, "errors": errors}
+    stats: Dict[str, Any] = {"status": status, "errors": errors,
+                             "pdf_backend": getattr(converter, "docscout_backend", "unknown")}
     comps: List[Component] = []
     if doc is not None:
         comps, s = docling_to_components(doc, doc_id, pages, cfg)
