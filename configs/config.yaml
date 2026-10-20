@@ -67,18 +67,21 @@ fusion:
   method: weighted_sum              # weighted_sum (main) | rrf (comparison)
   normalization: minmax             # minmax | zscore
   rrf_k: 60
-  retriever_weights:                # within a branch, after normalization
-    bm25: 0.4
-    dense: 0.6
-    clip: 0.5                       # figure branch only
+  # Tuned on the DEV split only (eval/tune_fusion.py, eval/results/tuning.json; P5).
+  # Objective = mean(dev page MRR on docs >= 2 pages, dev component MRR): 0.4753 before -> 0.5133 after.
+  retriever_weights:                # within a branch, after normalization; renormalized over the branch's retrievers
+    bm25: 0.7
+    dense: 0.3                      # BGE (= 1 - bm25)
+    clip: 0.3                       # figure branch only (fixed, not tuned)
   branch_weights:                   # soft routing: all branches searched, label sets weights
-    textual:   {text: 0.6, table: 0.25, figure: 0.15}
-    numerical: {text: 0.3, table: 0.6,  figure: 0.1}
+    textual:   {text: 0.4, table: 0.375, figure: 0.225}
+    numerical: {text: 0.3, table: 0.6,   figure: 0.1}
     visual:    {text: 0.25, table: 0.15, figure: 0.6}
 
 classifier:
   use_llm: true
-  rule_confidence: 0.9              # rules below this confidence defer to the LLM
+  rule_confidence: 0.9              # confidence reported when exactly one rule group matches
+  unsure_fallback: textual          # label used when rules are unsure and the LLM is off / fails
 
 feedback:
   step: 0.05                        # added to rerank score per preference count
@@ -86,17 +89,23 @@ feedback:
 
 llm:
   provider: groq
-  model: llama-3.3-70b-versatile    # overridden by LLM_MODEL in .env if set
+  model: openai/gpt-oss-20b         # overridden by LLM_MODEL in .env if set
   temperature: 0.0
   max_tokens: 512
-  max_retries: 3
+  max_retries: 5                    # retries on 429 / 5xx / connection errors
+  backoff_base_s: 2.0               # wait = backoff_base_s * 2**attempt (or Retry-After if larger)
+  backoff_max_s: 60.0
+  min_interval_s: 2.1               # minimum gap between real API calls (Groq free tier: 30 requests/min)
+  timeout_s: 30
+  reasoning_effort: low             # sent only to reasoning models (openai/gpt-oss-*); fewer hidden tokens
   cache_path: data/processed/llm_cache.jsonl
 
 eval:
   k_values: [1, 5, 10]
   metrics: [recall@1, recall@5, recall@10, mrr, ndcg@10]
   subset_size: 150
-  dev_fraction: 0.2
+  dev_fraction: 0.2                 # fraction of DOCUMENTS in the dev split (tuning only)
+  split_file: eval/results/split.json
   anls_threshold: 0.5
   fuzzy_match_threshold: 90
   seed: 42

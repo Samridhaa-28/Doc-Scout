@@ -148,3 +148,66 @@ Full report: [docs/reports/P4_REPORT.md](reports/P4_REPORT.md) · results: [eval
 ### Pending
 - **Demo PDF:** deferred again (not added in P4).
 - `.env` with `LLM_API_KEY` exists locally (gitignored) for P5.
+
+## P5 (approved, 2026-10-20): classifier, hybrid fusion, rerank, ablation
+Full report: [docs/reports/P5_REPORT.md](reports/P5_REPORT.md) · results: [eval/results/summary.md](../eval/results/summary.md) · plot: `eval/results/ablation.png`
+
+### What exists now
+- `src/docscout/reasoning/llm_client.py`: provider-agnostic `LLMClient` (Groq implemented): JSON mode, temperature 0, sha256 disk cache (`data/processed/llm_cache.jsonl`), backoff on 429/5xx, minimum call gap (`llm.min_interval_s`), counters for calls / cache hits / tokens.
+- `src/docscout/query/classifier.py`: word-boundary rules first; the LLM decides when the rules are unsure (both or neither group match).
+- `src/docscout/retrieval/`: `retrievers.py` (scores every component of the document with BM25 + BGE, + CLIP for figures; `Candidate` keeps raw / norm / fused / rrf / rerank / final), `normalize.py` (min-max per (branch, retriever) list, z-score option), `fusion.py` (weighted sum, RRF k=60, hard routing).
+- `src/docscout/rerank/cross_encoder.py`: ms-marco-MiniLM-L-6-v2 on the top 30; the rest keep their fused order.
+- `eval/split.py` (document-level dev/test split, **committed** as `eval/results/split.json`), `eval/eval_classifier.py`, `eval/tune_fusion.py` (dev only), `eval/plot_results.py`, and `eval/run_eval.py` with 8 systems, per-split metrics, p90 latency and ranx paired t-tests.
+- Tests: 87 passing.
+
+### Key interfaces
+- `get_client() -> LLMClient`; `client.complete_json(prompt, system)`; `client.stats`.
+- `classify(query, client=None, use_llm=None) -> {"type", "confidence", "source"}`; `weights_for(type)`.
+- `HybridRetriever(load, comp_meta, cfg).retrieve(query, doc_id, branches=None) -> List[Candidate]`.
+- `rank_candidates(cands, qtype, method, routing, retriever_weights, branch_weights, rrf_k, normalization)`.
+- `CrossEncoderReranker(cfg=cfg).rerank(query, ranked, texts)`. The P6 feedback boost goes on `c.final` after rerank.
+- `eval.split.load_split()`. Result JSON: `{system, splits: {test, dev, all}, latency_ms_median, latency_ms_p90, runs (full)}`.
+- Tuned config (dev only): `fusion.retriever_weights` bm25 0.7 / dense 0.3 / clip 0.3; `branch_weights` textual {0.4, 0.375, 0.225}, numerical {0.3, 0.6, 0.1}, visual {0.25, 0.15, 0.6} (text / table / figure).
+
+### Split
+Split by document, seed 42, 20% of documents to dev:
+- dev: 10 documents, 76 questions
+- test: 39 documents, 217 questions (176 on documents with ≥ 2 pages, 209 with a relevant component)
+
+### TEST results (page level on documents with ≥ 2 pages; component level)
+| system | page R@1 | page MRR | comp R@1 | comp MRR | median / p90 ms |
+|---|---|---|---|---|---|
+| random | 0.270 | 0.501 | - | - | - |
+| bm25_all | 0.636 | 0.718 | 0.417 | 0.552 | 0.2 / 0.5 |
+| dense_minilm_all | 0.568 | 0.725 | 0.259 | 0.465 | 8.9 / 11.8 |
+| dense_bge_all | 0.631 | 0.756 | 0.362 | 0.544 | 35.6 / 40.4 |
+| hybrid_weighted_soft | 0.659 | 0.788 | 0.432 | 0.599 | 54.3 / 60.2 |
+| hybrid_rrf_soft | 0.659 | 0.786 | 0.398 | 0.581 | 54.8 / 60.5 |
+| hybrid_weighted_hard | 0.602 | 0.696 | 0.360 | 0.473 | 36.1 / 43.3 |
+| **hybrid_weighted_soft_rerank** | **0.733** | **0.828** | **0.488** | **0.653** | 762.7 / 1850.9 |
+| hybrid_weighted_soft_goldtype (analysis) | 0.670 | 0.795 | 0.449 | 0.607 | 57.2 / 66.4 |
+
+Paired t-test against dense_bge_all (p < 0.05):
+- soft: page MRR p = 0.077 (not significant), component MRR p = 0.003
+- soft + rerank: page MRR p = 0.0002, component MRR p < 0.0001
+
+Classifier (293 questions, DocVQA question_types, 100% join), accuracy / macro-F1:
+- rules-only: 0.614 / 0.521
+- llm-only: 0.747 / 0.644
+- combined: 0.751 / 0.652
+
+A cached rerun makes 0 LLM calls.
+
+### Decisions
+- **LLM = `openai/gpt-oss-20b` for all evaluation.** The requested `llama-3.1-8b-instant` returns 404 on this Groq key, which has no Llama chat models. gpt-oss-20b is the small, fast option with JSON mode; it runs with `reasoning_effort: low`, and the account limits are 1,000 requests/day and 8,000 tokens/min. P6 will add an optional demo-only model setting (gpt-oss-120b).
+- **P6 pipeline default = `hybrid_weighted_soft_rerank`.**
+- **Split committed:** `.gitignore` has `!eval/results/split.json`.
+- **Normalization unchanged (min-max), no post-hoc changes. Known limitation: lone table.**
+  - Min-max gives the best table 1.0 from both retrievers, so a numerical query puts it at exactly w_table = 0.6, above any paragraph (≤ 0.3).
+  - This hurts on DEV: page MRR 0.586 for hybrid vs 0.693 for BGE; e.g. 49172, where the table on p9 beats the answer paragraph on p10. On TEST the effect is small (13 of 46 such top-1 tables are on the wrong page).
+  - Rerank mostly repairs it.
+- Hard routing is strict: an empty ranking when the document has no component in the predicted branch (34/217 test questions).
+- The Avast TLS workaround (`SSL_CERT_FILE`) is still needed on this machine for Groq and HF.
+
+### Pending
+- Demo PDF still missing (`data/raw/pdfs/`).

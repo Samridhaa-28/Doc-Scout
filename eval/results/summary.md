@@ -1,29 +1,84 @@
 # Retrieval results (within-document search)
 
-Evaluation set: 49 documents from `eval_docs.txt`, 293 questions. Page metrics on documents with >= 2 pages: 246 questions (main page-level number). Component metrics: 278 questions with >= 1 relevant component.
+Dev/test split by document (`eval/results/split.json`). Weights were tuned on dev only. **Main tables: TEST** (39 documents, 217 questions; 176 from documents with >= 2 pages; 209 with >= 1 relevant component). Headline metrics: R@1 and MRR (bold). R@5 / R@10 / nDCG@10 are secondary: documents are short, so even random pages reach R@5 = 0.77.
 
-## Page level: documents with >= 2 pages (main)
+Latency: per query, models loaded, query classifier excluded (see classifier.json for its latency).
 
-| system | R@1 | R@5 | R@10 | MRR | nDCG@10 | median ms/query |
-|---|---|---|---|---|---|---|
-| random (expected) | 0.246 | 0.770 | 0.938 | 0.473 | - | - |
-| bm25_all | 0.593 | 0.793 | 0.833 | 0.679 | 0.716 | 0.3 |
-| dense_bge_all | 0.606 | 0.907 | 0.976 | 0.738 | 0.795 | 35.4 |
-| dense_minilm_all | 0.537 | 0.902 | 0.963 | 0.696 | 0.760 | 9.4 |
+## TEST: page level, documents with >= 2 pages (main)
 
-## Page level: all questions
+| system | R@1 | MRR | R@5 | R@10 | nDCG@10 | median ms | p90 ms |
+|---|---|---|---|---|---|---|---|
+| random (expected) | 0.270 | 0.501 | 0.801 | 0.966 | - | - | - |
+| bm25_all | **0.636** | **0.718** | 0.841 | 0.852 | 0.751 | 0.2 | 0.5 |
+| dense_minilm_all | **0.568** | **0.725** | 0.932 | 0.983 | 0.788 | 8.9 | 11.8 |
+| dense_bge_all | **0.631** | **0.756** | 0.926 | 0.983 | 0.810 | 35.6 | 40.4 |
+| hybrid_weighted_soft | **0.659** | **0.788** | 0.966 | 0.994 | 0.839 | 54.3 | 60.2 |
+| hybrid_rrf_soft | **0.659** | **0.786** | 0.955 | 0.994 | 0.837 | 54.8 | 60.5 |
+| hybrid_weighted_hard | **0.602** | **0.696** | 0.835 | 0.875 | 0.740 | 36.1 | 43.3 |
+| hybrid_weighted_soft_rerank | **0.733** | **0.828** | 0.949 | 0.994 | 0.869 | 762.7 | 1850.9 |
+| hybrid_weighted_soft_goldtype (analysis: gold types) | **0.670** | **0.795** | 0.966 | 0.994 | 0.844 | 57.2 | 66.4 |
 
-| system | R@1 | R@5 | R@10 | MRR | nDCG@10 |
+## TEST: component level (questions with >= 1 relevant component)
+
+| system | R@1 | MRR | R@5 | R@10 | nDCG@10 |
 |---|---|---|---|---|---|
-| random (expected) | 0.367 | 0.807 | 0.948 | 0.557 | - |
-| bm25_all | 0.625 | 0.792 | 0.826 | 0.696 | 0.727 |
-| dense_bge_all | 0.669 | 0.922 | 0.980 | 0.780 | 0.828 |
-| dense_minilm_all | 0.611 | 0.918 | 0.969 | 0.745 | 0.798 |
+| bm25_all | **0.417** | **0.552** | 0.612 | 0.648 | 0.556 |
+| dense_minilm_all | **0.259** | **0.465** | 0.621 | 0.764 | 0.524 |
+| dense_bge_all | **0.362** | **0.544** | 0.670 | 0.755 | 0.582 |
+| hybrid_weighted_soft | **0.432** | **0.599** | 0.701 | 0.763 | 0.624 |
+| hybrid_rrf_soft | **0.398** | **0.581** | 0.698 | 0.793 | 0.612 |
+| hybrid_weighted_hard | **0.360** | **0.473** | 0.491 | 0.519 | 0.458 |
+| hybrid_weighted_soft_rerank | **0.488** | **0.653** | 0.716 | 0.805 | 0.677 |
+| hybrid_weighted_soft_goldtype (analysis: gold types) | **0.449** | **0.607** | 0.694 | 0.757 | 0.628 |
 
-## Component level (questions with >= 1 relevant component)
+## TEST: page level, all questions
 
-| system | R@1 | R@5 | R@10 | MRR | nDCG@10 |
+| system | R@1 | MRR | R@5 | R@10 | nDCG@10 |
 |---|---|---|---|---|---|
-| bm25_all | 0.380 | 0.588 | 0.633 | 0.522 | 0.530 |
-| dense_bge_all | 0.331 | 0.633 | 0.726 | 0.514 | 0.551 |
-| dense_minilm_all | 0.244 | 0.593 | 0.729 | 0.448 | 0.502 |
+| random (expected) | 0.408 | 0.596 | 0.839 | 0.972 | - |
+| bm25_all | **0.664** | **0.730** | 0.829 | 0.839 | 0.757 |
+| dense_minilm_all | **0.650** | **0.777** | 0.945 | 0.986 | 0.828 |
+| dense_bge_all | **0.700** | **0.802** | 0.940 | 0.986 | 0.846 |
+| hybrid_weighted_soft | **0.724** | **0.828** | 0.972 | 0.995 | 0.869 |
+| hybrid_rrf_soft | **0.724** | **0.826** | 0.963 | 0.995 | 0.868 |
+| hybrid_weighted_hard | **0.585** | **0.661** | 0.774 | 0.806 | 0.697 |
+| hybrid_weighted_soft_rerank | **0.783** | **0.861** | 0.959 | 0.995 | 0.893 |
+| hybrid_weighted_soft_goldtype (analysis: gold types) | **0.733** | **0.834** | 0.972 | 0.995 | 0.874 |
+
+## TEST: paired t-test vs dense_bge_all (ranx, p < 0.05)
+
+| system | metric | system score | baseline score | p-value | significant |
+|---|---|---|---|---|---|
+| hybrid_weighted_soft | page MRR (>=2 pages) | 0.788 | 0.756 | 0.0765 | no |
+| hybrid_weighted_soft_rerank | page MRR (>=2 pages) | 0.828 | 0.756 | 0.0002 | yes |
+| hybrid_weighted_soft | component MRR | 0.599 | 0.544 | 0.0032 | yes |
+| hybrid_weighted_soft_rerank | component MRR | 0.653 | 0.544 | 0.0000 | yes |
+
+## Secondary: all 293 questions (dev + test; dev was used for tuning)
+
+Page level, documents with >= 2 pages (246 questions):
+
+| system | R@1 | MRR | R@5 | R@10 | nDCG@10 |
+|---|---|---|---|---|---|
+| random (expected) | 0.246 | 0.473 | 0.770 | 0.938 | - |
+| bm25_all | **0.593** | **0.679** | 0.793 | 0.833 | 0.716 |
+| dense_minilm_all | **0.537** | **0.696** | 0.902 | 0.963 | 0.760 |
+| dense_bge_all | **0.606** | **0.738** | 0.907 | 0.976 | 0.795 |
+| hybrid_weighted_soft | **0.585** | **0.730** | 0.919 | 0.984 | 0.791 |
+| hybrid_rrf_soft | **0.573** | **0.716** | 0.894 | 0.976 | 0.778 |
+| hybrid_weighted_hard | **0.524** | **0.630** | 0.772 | 0.829 | 0.677 |
+| hybrid_weighted_soft_rerank | **0.683** | **0.796** | 0.923 | 0.980 | 0.840 |
+| hybrid_weighted_soft_goldtype (analysis: gold types) | **0.638** | **0.765** | 0.931 | 0.980 | 0.817 |
+
+Component level (278 questions):
+
+| system | R@1 | MRR | R@5 | R@10 | nDCG@10 |
+|---|---|---|---|---|---|
+| bm25_all | **0.380** | **0.522** | 0.588 | 0.633 | 0.530 |
+| dense_minilm_all | **0.244** | **0.448** | 0.593 | 0.729 | 0.502 |
+| dense_bge_all | **0.331** | **0.514** | 0.633 | 0.726 | 0.551 |
+| hybrid_weighted_soft | **0.382** | **0.560** | 0.653 | 0.735 | 0.583 |
+| hybrid_rrf_soft | **0.350** | **0.540** | 0.641 | 0.767 | 0.570 |
+| hybrid_weighted_hard | **0.313** | **0.428** | 0.432 | 0.470 | 0.408 |
+| hybrid_weighted_soft_rerank | **0.437** | **0.610** | 0.673 | 0.780 | 0.637 |
+| hybrid_weighted_soft_goldtype (analysis: gold types) | **0.432** | **0.597** | 0.666 | 0.747 | 0.613 |

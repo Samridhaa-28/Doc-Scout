@@ -15,6 +15,7 @@ data/indexes/
 
 # Evaluation outputs
 eval/results/*.json
+!eval/results/split.json
 
 # Notebooks
 .ipynb_checkpoints/
