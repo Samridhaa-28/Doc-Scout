@@ -22,6 +22,20 @@ paths:
   results_dir: eval/results
   reports_dir: docs/reports
 
+# Separate stores: DOCSCOUT_STORE=<name> (or --store <name> on scripts) replaces these paths, so the demo
+# PDFs get their own components, graphs, tables and indexes (and BM25 statistics); the eval store is untouched.
+stores:
+  demo:
+    processed_dir: data/processed/demo
+    components_file: data/processed/demo/components.jsonl
+    tables_dir: data/processed/demo/tables
+    figures_dir: data/processed/demo/figures
+    graphs_dir: data/processed/demo/graphs
+    debug_dir: data/processed/demo/debug
+    docs_dir: data/processed/demo/docs
+    pages_dir: data/processed/demo/pages
+    indexes_dir: data/indexes_demo
+
 dataset:
   hf_name: lmms-lab/MP-DocVQA      # fallback: rubentito/mp-docvqa
   split: val
@@ -83,18 +97,40 @@ classifier:
   rule_confidence: 0.9              # confidence reported when exactly one rule group matches
   unsure_fallback: textual          # label used when rules are unsure and the LLM is off / fails
 
+localization:                      # table value localization (numerical queries, table components only)
+  fuzzy_threshold: 85               # rapidfuzz ratio (0-100) for a query word vs a header / row-label word
+  min_fuzzy_len: 4                  # shorter words, numbers, years and units must match exactly as tokens
+  max_cells: 12                     # cells returned / shown at most
+  top_k_tables: 3                   # localize at most this many tables (the first ones among the top-k evidence)
+
+context:                           # graph context expansion
+  max_siblings: 2                   # reading-order neighbours per evidence item (same page preferred)
+  sibling_window: 3                 # look this many blocks back/forward for siblings
+
+answer:                            # grounded answer generation
+  max_prompt_tokens: 2500           # estimated tokens (chars / 4) for the whole prompt; keeps us under 8,000 TPM
+  chars_per_token: 4.0
+  max_item_chars: 1200              # text of one evidence item
+  max_ctx_chars: 300                # text of one context item
+  max_table_rows: 6                 # table without localized cells: first rows shown
+  not_found: "Not found in the retrieved evidence"
+  slots: conditional                # modality slot reservation: off | conditional | both (retrieval/slots.py); adopted on DEV by the pre-registered rule, P6 report 2.10 / 4.10
+
 feedback:
-  step: 0.05                        # added to rerank score per preference count
+  step: 0.05                       # added to rerank score per preference count
   cap: 0.2                          # max absolute boost/penalty
 
 llm:
   provider: groq
   model: openai/gpt-oss-20b         # overridden by LLM_MODEL in .env if set
+  demo_model: openai/gpt-oss-120b   # used only by scripts.ask --demo (never in evaluation)
+  tokens_per_minute: 7000           # client-side token budget per rolling 60 s (Groq free tier: 8,000 TPM)
   temperature: 0.0
   max_tokens: 512
   max_retries: 5                    # retries on 429 / 5xx / connection errors
   backoff_base_s: 2.0               # wait = backoff_base_s * 2**attempt (or Retry-After if larger)
   backoff_max_s: 60.0
+  max_retry_after_s: 900             # a server Retry-After (e.g. rolling daily token quota) is waited out up to this
   min_interval_s: 2.1               # minimum gap between real API calls (Groq free tier: 30 requests/min)
   timeout_s: 30
   reasoning_effort: low             # sent only to reasoning models (openai/gpt-oss-*); fewer hidden tokens

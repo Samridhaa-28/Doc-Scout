@@ -12,9 +12,11 @@ __pycache__/
 data/raw/
 data/processed/
 data/indexes/
+data/indexes_demo/
 
 # Evaluation outputs
 eval/results/*.json
+eval/results/*.jsonl
 !eval/results/split.json
 
 # Notebooks

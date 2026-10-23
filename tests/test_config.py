@@ -47,3 +47,22 @@ def test_load_config_custom_file(tmp_path: Path):
     f.write_text("paths:\n  foo: some/dir\nllm:\n  provider: groq\n  model: m\n", encoding="utf-8")
     cfg = load_config(f, root=tmp_path)
     assert cfg["paths"]["foo"] == (tmp_path / "some" / "dir").resolve()
+
+
+def test_demo_store_replaces_store_paths_only(monkeypatch):
+    from docscout.config import load_config
+
+    monkeypatch.delenv("DOCSCOUT_STORE", raising=False)
+    base = load_config()
+    monkeypatch.setenv("DOCSCOUT_STORE", "demo")
+    demo = load_config()
+    assert demo["store"] == "demo" and base["store"] == "eval"
+    for k in ("components_file", "graphs_dir", "tables_dir", "indexes_dir", "docs_dir"):
+        assert demo["paths"][k] != base["paths"][k]
+    for k in ("questions_file", "pdfs_dir", "results_dir"):
+        assert demo["paths"][k] == base["paths"][k]
+    assert demo["llm"]["cache_path"] == base["llm"]["cache_path"]  # LLM cache is shared
+    monkeypatch.setenv("DOCSCOUT_STORE", "nope")
+    import pytest
+    with pytest.raises(KeyError):
+        load_config()

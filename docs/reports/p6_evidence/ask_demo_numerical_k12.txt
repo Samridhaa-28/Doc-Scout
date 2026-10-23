@@ -1,0 +1,83 @@
+Q: How many people had Medicaid coverage in 2022, in thousands?
+doc p60-281 [demo store] (344 components) | type numerical (rules, conf 0.90) | branch weights {'text': 0.3, 'table': 0.6, 'figure': 0.1}
+
+ANSWER: 62,050
+citations: E11
+
+EVIDENCE
+[E1] paragraph p8   p60-281_p8_paragraph_12
+      More people were insured in 2022 than 2021. In 2022, 92.1 percent of people, or 304.0 million, had health insurance at some point during the year, representi...
+      ctx1 heading p8: Highlights
+      ctx2 paragraph p8: In 2022, private health insurance coverage continued to be more prevalent than public c...
+      ctx3 paragraph p8: in the United States: 2022" and "Poverty in the United States: 2022." Respondents were ...
+      why: numerical (text 0.3) | bm25 3.47->0.43, bge 0.73->1.00, fused 0.180, CE 6.21 | terms: people, 2022 | Page 8 -> Section 'Highlights' -> Paragraph 12 | bbox 455,426,763,676
+[E2] paragraph p9   p60-281_p9_paragraph_9
+      In 2022, most people (92.1 percent) had health insurance coverage at some point during the calendar year (Table 1 and Figure 1). That means 7.9 percent of pe...
+      ctx1 heading p9: ESTIMATES OF HEALTH INSURANCE COVERAGE IN THE UNITED STATES
+      ctx2 paragraph p9: This report classifies health insurance coverage into three different categories: overa...
+      ctx3 paragraph p9: Employment-based insurance was the most common subtype of health insurance in the civil...
+      why: numerical (text 0.3) | bm25 3.94->0.48, bge 0.70->0.93, fused 0.185, CE 5.59 | terms: people, coverage, 2022 | Page 9 -> Section 'ESTIMATES OF HEALTH INSURANCE COVERAG...' -> Paragraph 9 | bbox 455,871,763,1120
+[E3] paragraph p12  p60-281_p12_paragraph_2
+      In 2022, more than one-third of children under 19 years old had public health coverage, compared with 19.1 percent of adults 19 to 64 years old. Most adults ...
+      ctx1 heading p12: Public Coverage
+      ctx2 paragraph p12: Between 2021 and 2022, there was no statistical change in private coverage or any priva...
+      why: numerical (text 0.3) | bm25 2.98->0.37, bge 0.65->0.81, fused 0.150, CE 4.15 | terms: medicaid, coverage, 2022 | Page 12 -> Section 'Public Coverage' -> Paragraph 2 | bbox 108,831,420,1237
+[E4] paragraph p18  p60-281_p18_paragraph_6
+      Private coverage rates decreased by 0.6 percentage points and public coverage rates increased by 0.7 percentage points in expansion states between 2021 and 2...
+      ctx1 heading p18: Coverage Type by Demographic and Social Characteristics
+      ctx2 paragraph p18: Private and public coverage rates also varied by nativity status. In 2022, 67.6 percent...
+      ctx3 paragraph p18: 12 Health Insurance Coverage in the United States: 2022
+      why: numerical (text 0.3) | bm25 3.35->0.41, bge 0.63->0.76, fused 0.155, CE 3.91 | terms: people, coverage, 2022 | Page 18 -> Section 'Coverage Type by Demographic and Soci...' -> Paragraph 6 | bbox 803,1008,1118,1413
+[E5] paragraph p22  p60-281_p22_paragraph_15
+      12 Although most people aged 65 and older held coverage through Medicare, 48.3 percent of people aged 65 and older reported holding more than one type of cov...
+      ctx1 heading p22: ENDNOTES
+      ctx2 paragraph p22: 11 The percentage-point change in the uninsured rate for adults aged 26 to 34 was not s...
+      ctx3 paragraph p22: 13 The percentage-point change in the uninsured rate for adults 19 to 64 years old was ...
+      why: numerical (text 0.3) | bm25 3.85->0.47, bge 0.65->0.81, fused 0.173, CE 3.19 | terms: people, coverage, 2022 | Page 22 -> Section 'ENDNOTES' -> Paragraph 15 | bbox 455,851,753,949
+[E6] paragraph p14  p60-281_p14_paragraph_0
+      The remaining twelve states had not expanded Medicaid eligibility ("nonexpansion states"). The uninsured rate for children living in expansion states in 2022...
+      ctx1 heading p12: Children Under the Age of 19
+      ctx2 heading p14: Working-Age Adults 19 to 64 Years Old
+      ctx3 paragraph p14: Working-age adults (aged 19 to 64) may have different health insurance outcomes from ot...
+      why: numerical (text 0.3) | bm25 2.96->0.36, bge 0.68->0.88, fused 0.156, CE 3.06 | terms: medicaid, 2022 | Page 14 -> Section 'Children Under the Age of 19' -> Paragraph 0 | bbox 107,108,414,331
+[E7] paragraph p9   p60-281_p9_paragraph_13
+      Of the three subtypes of public health insurance, Medicare rates increased between 2021 and 2022, while the Medicaid and VA and CHAMPVA rates did not have an...
+      ctx1 paragraph p9: Of the subtypes of private health insurance, employment-based coverage was not statisti...
+      ctx2 paragraph p9: U.S. Census Bureau
+      why: numerical (text 0.3) | bm25 4.97->0.61, bge 0.61->0.71, fused 0.192, CE 2.36 | terms: people, medicaid, 2022 | Page 9 -> Section 'ESTIMATES OF HEALTH INSURANCE COVERAG...' -> Paragraph 13 | bbox 803,1301,1095,1420
+[E8] paragraph p22  p60-281_p22_paragraph_8
+      ⁵ In 2022, the percentage of people with Medicare coverage was not statistically different from the percentage of people with Medicaid coverage.
+      ctx1 paragraph p22: ⁴ The final category includes CHAMPVA (Civilian Health and Medical Program of the Depar...
+      ctx2 paragraph p22: ⁶ Throughout this report, details may not sum to totals because of rounding.
+      why: numerical (text 0.3) | bm25 8.12->1.00, bge 0.68->0.87, fused 0.289, CE 1.78 | terms: people, medicaid, coverage, 2022 | Page 22 -> Section 'ENDNOTES' -> Paragraph 8 | bbox 455,256,766,320
+[E9] paragraph p12  p60-281_p12_paragraph_3
+      Between 2021 and 2022, there were very few changes in public coverage by age group. Medicaid coverage for adults 65 years and older decreased by 0.6 percenta...
+      ctx1 heading p12: UNINSURED RATES FOR CHILDREN AND WORKINGAGE ADULTS BY SELECTED CHARACTERISTICS
+      why: numerical (text 0.3) | bm25 3.08->0.38, bge 0.64->0.79, fused 0.151, CE 1.56 | terms: medicaid, coverage, 2022 | Page 12 -> Section 'Public Coverage' -> Paragraph 3 | bbox 108,1261,386,1303
+[E10] paragraph p9   p60-281_p9_paragraph_11
+      The percentage of people covered by any type of health insurance in 2022 was higher than in 2021. The percentage of people covered by health insurance increa...
+      why: numerical (text 0.3) | bm25 3.78->0.47, bge 0.67->0.85, fused 0.174, CE 1.23 | terms: people, coverage, 2022 | Page 9 -> Section 'ESTIMATES OF HEALTH INSURANCE COVERAG...' -> Paragraph 11 | bbox 803,753,1116,1002
+[E11] table     p8   p60-281_p8_table_0
+      Coverage type | 2021.Number | 2021.Margin of error 1 (±) | 2021.Percent | 2021.Margin of error 1 (±).1 | 2022.Number | 2022.Margin of error 1 (±) | 2022.Perc...
+      localized cells (cell):
+        Marketplace coverage 2 | 2022.Number = 11,840
+        Marketplace coverage 2 | 2022.Margin of error 1 (±) = 461
+        Marketplace coverage 2 | 2022.Percent = 3.6
+        Marketplace coverage 2 | 2022.Margin of error 1 (±) (1) = 0.1
+        Marketplace coverage 2 | Change in.percent (2022 less 2021) = 0.1
+        Medicaid 2 | 2022.Number = 62,050
+        Medicaid 2 | 2022.Margin of error 1 (±) = 1,112
+        Medicaid 2 | 2022.Percent = 18.8
+      ctx1 heading p8: Number and Percentage of People by Health Insurance Coverage Status and Type: 2021 to 2022
+      ctx2 paragraph p8: (Numbers in thousands. Margins of error in thousands or percentage points as appropriat...
+      ctx3 paragraph p8: * An asterisk preceding an estimate indicates change is statistically different from ze...
+      why: numerical (table 0.6) | bm25 2.01->0.41, bge 0.62->1.00, fused 0.352, CE 0.43 | terms: medicaid, coverage, 2022, thousands | Page 8 -> Section 'Number and Percentage of People by He...' -> Table 0 | bbox 104,855,1120,1194
+[E12] paragraph p20  p60-281_p20_paragraph_4
+      In 2022, the uninsured rate decreased by 0.4 percentage points, and Medicare rates increased by 0.3 percentage points, likely due to population aging. Overal...
+      ctx1 heading p20: SUMMARY
+      ctx2 heading p20: ACCESSING HEALTH INSURANCE COVERAGE DATA
+      ctx3 paragraph p20: There were also differences in the distribution of coverage type by marital status. For...
+      why: numerical (text 0.3) | bm25 3.47->0.43, bge 0.62->0.74, fused 0.156, CE 0.42 | terms: many, people, coverage, 2022 | Page 20 -> Section 'SUMMARY' -> Paragraph 4 | bbox 455,906,767,1396
+
+timings ms: classify 1, retrieve 69, normalize 1, fuse 1, rerank 2400, feedback 0, localize 21, expand 4, answer 2009, provenance 2, total 4506
+LLM model openai/gpt-oss-20b | calls 1 cache_hits 0 tokens 2576 | prompt est 2493 tokens, ids 32 | reranked list: 344 components

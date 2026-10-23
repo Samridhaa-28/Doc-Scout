@@ -202,6 +202,10 @@ def run_ingest(source: str, docs: Optional[List[str]] = None, docs_file: Optiona
                            retry_failed=retry_failed, no_isolate=not isolate, doc_timeout=doc_timeout,
                            pdf_backend=pdf_backend, reserialize=reserialize)
 
+    if source == "pdf" and cfg.get("store", "eval") == "eval":
+        print("Demo PDFs go to their own store so the MP-DocVQA eval corpus (and its BM25 statistics) is unchanged: "
+              "rerun with --store demo.")
+        return 1
     comp_path: Path = cfg["paths"]["components_file"]
     if args.reserialize:
         comps = read_components(comp_path)

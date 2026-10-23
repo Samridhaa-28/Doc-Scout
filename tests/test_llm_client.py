@@ -90,3 +90,34 @@ def test_json_helper_rejects_non_json(tmp_path):
     c, _ = make(FakeProvider(reply="not json"), tmp_path)
     with pytest.raises(LLMError):
         c.complete_json("q")
+
+
+def test_token_budget_per_minute_waits_for_the_window(tmp_path):
+    """tokens_per_minute: a call whose estimate would exceed the rolling 60 s budget waits; cache hits never wait."""
+    now = [0.0]
+    p = FakeProvider()  # each real call uses 13 tokens
+    sleeps = []
+
+    def sleep(s):
+        sleeps.append(s)
+        now[0] += s
+    c = LLMClient(p, model="m", cache_path=tmp_path / "c.jsonl", sleep=sleep, clock=lambda: now[0],
+                  max_tokens=0, tokens_per_minute=20)
+    c.complete("a" * 40)  # estimate 10 tokens, log empty -> no wait; logs 13
+    assert sleeps == []
+    now[0] = 5.0
+    c.complete("a" * 40)  # cache hit: no wait
+    c.complete("b" * 40)  # 13 used + 10 > 20 -> wait until the first call leaves the window (t=60)
+    assert sleeps == [55.0] and p.calls == 2
+
+
+def test_long_retry_after_is_waited_out_not_capped(tmp_path):
+    class P(FakeProvider):
+        def complete(self, messages, model, temperature, max_tokens, json_mode):
+            self.calls += 1
+            if self.calls == 1:
+                raise RetryableError("HTTP 429", status=429, retry_after=400.0)
+            return self.reply, {"prompt_tokens": 1, "completion_tokens": 1}
+    c, sleeps = make(P(), tmp_path, max_retry_after_s=900.0)
+    c.complete("q")
+    assert sleeps == [400.0]  # one long wait instead of several 60 s retries

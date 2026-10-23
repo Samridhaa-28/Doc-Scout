@@ -29,6 +29,13 @@ def load_config(path: Optional[Path] = None, root: Path = REPO_ROOT) -> Dict[str
     with path.open("r", encoding="utf-8") as f:
         cfg: Dict[str, Any] = yaml.safe_load(f) or {}
     cfg["paths"] = _resolve_paths(cfg.get("paths", {}), root)
+    store = os.environ.get("DOCSCOUT_STORE") or None
+    if store:
+        stores = cfg.get("stores") or {}
+        if store not in stores:
+            raise KeyError(f"unknown store {store!r} (DOCSCOUT_STORE); configured: {sorted(stores)}")
+        cfg["paths"].update(_resolve_paths(stores[store], root))
+    cfg["store"] = store or "eval"
     if "llm" in cfg and "cache_path" in cfg["llm"]:
         cfg["llm"]["cache_path"] = _resolve_paths({"c": cfg["llm"]["cache_path"]}, root)["c"]
     cfg["repo_root"] = root
@@ -48,6 +55,18 @@ def _cached_config() -> Dict[str, Any]:
 def get_config() -> Dict[str, Any]:
     """Return the project config (loaded once). Returns a deep copy so callers can't mutate the cache."""
     return copy.deepcopy(_cached_config())
+
+
+def use_store(name: Optional[str]) -> Dict[str, Any]:
+    """Switch this process (and child processes) to a configured store ('demo'), or back to the eval store (None).
+
+    Sets DOCSCOUT_STORE and reloads the cached config; returns the new config."""
+    if name and name != "eval":
+        os.environ["DOCSCOUT_STORE"] = name
+    else:
+        os.environ.pop("DOCSCOUT_STORE", None)
+    _cached_config.cache_clear()
+    return get_config()
 
 
 def get_path(key: str) -> Path:

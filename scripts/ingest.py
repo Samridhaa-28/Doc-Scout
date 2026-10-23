@@ -14,11 +14,15 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
+from docscout.config import use_store
+
 from docscout.ingestion.runner import run_ingest
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--store", choices=["eval", "demo"], default="eval",
+                    help="eval: MP-DocVQA store (default); demo: separate store for the demo PDFs")
     ap.add_argument("--source", choices=["mpdocvqa", "pdf"], required=True)
     ap.add_argument("--limit", type=int, default=0, help="max documents to process (0 = all)")
     ap.add_argument("--docs", nargs="*", help="explicit doc ids (mpdocvqa) or PDF file names (pdf)")
@@ -37,6 +41,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                     help="no parsing: recompute text_form and graphs for components already in components.jsonl")
     ap.add_argument("--verbose", action="store_true", help="print the full JSON row per document")
     a = ap.parse_args(argv)
+    use_store(a.store)
     return run_ingest(a.source, docs=a.docs, docs_file=a.docs_file, limit=a.limit, max_minutes=a.max_minutes,
                       stop_on_error=a.stop_on_error, force=a.force, retry_failed=a.retry_failed,
                       isolate=not a.no_isolate, doc_timeout=a.doc_timeout, pdf_backend=a.pdf_backend,

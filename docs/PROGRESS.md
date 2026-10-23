@@ -211,3 +211,24 @@ A cached rerun makes 0 LLM calls.
 
 ### Pending
 - Demo PDF still missing (`data/raw/pdfs/`).
+
+## P6 (approved, 2026-10-23): localization, graph context, grounded answers, provenance, pipeline
+Full report: [docs/reports/P6_REPORT.md](reports/P6_REPORT.md) · evidence: `docs/reports/p6_evidence/` · results: `eval/results/summary.md` (ANLS section)
+
+### What exists now
+- `src/docscout/pipeline.py`: `DocScoutPipeline.answer(query, doc_id, session_id=None, top_k=5, feedback_adjust=None, *, slots=None, ...) -> QueryResult`. It runs 10 steps (classify → retrieve → normalize → fuse → rerank → feedback hook → localize → expand → answer → provenance). `meta.reranked` is the full list for "show next".
+- `localization/table_locator.py` (`locate`), `context/graph_expander.py` (`expand`, `expand_evidence`), `reasoning/prompts.py` + `answerer.py` (numbered evidence, prompt cap 2,500 est. tokens, JSON + citation validation), `evidence/provenance.py` (why-line), `retrieval/slots.py` (modality slot reservation).
+- `scripts/ask.py` (`--demo` = gpt-oss-120b, `--store`), `eval/eval_answers.py`, `eval/eval_locator.py`.
+- A separate demo store (`stores.demo`, `--store demo`) holds the Census P60-281 PDF; the eval corpus and the P5 numbers are unchanged.
+- Tests: 133 passing.
+
+### Results (TEST, gpt-oss-20b)
+- ANLS: (a) top-1 0.486 [0.424, 0.546]; (b) top-3 + context + cells 0.646 [0.585, 0.707]; oracle (40 q) 0.791. (b) − (a) = +0.161 [+0.103, +0.218].
+- Not found 38.2% / 15.7% / 15.0%; 0 invalid citations; the cached rerun makes 0 LLM calls.
+- Locator cell hit rate: clean v1 estimate 34/62 pipeline, 38/62 oracle (the shipped v3 has two TEST-informed rules: 32/62, 38/62).
+- Slot reservation: type-conditional adopted by a pre-registered non-inferiority rule on DEV (−0.005 [−0.015, 0.000], no benefit); TEST once 0.637 vs 0.646 (−0.009 [−0.023, 0.000]). Default `answer.slots: conditional`; the eval scripts default to `--slots off`.
+
+### Pending
+- Demo ask.py comparison with/without slots at k=5 (deferred: Groq daily token budget).
+- The demo visual question fails at k=5 without slots (the cross-encoder pushes Figure 2 to about rank 25).
+- Groq has a rolling daily token budget (~200k/day observed); the client waits out Retry-After (`llm.max_retry_after_s`).

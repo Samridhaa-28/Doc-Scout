@@ -9,7 +9,7 @@ import argparse
 import sys
 from typing import List, Optional
 
-from docscout.config import get_config
+from docscout.config import get_config, use_store
 from docscout.ingestion.visualize import render_doc
 
 
@@ -18,7 +18,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--doc", required=True)
     ap.add_argument("--verbose", action="store_true", help="one line per page")
+    ap.add_argument("--store", choices=["eval", "demo"], default="eval", help="demo: the demo-PDF store")
     args = ap.parse_args(argv)
+    cfg = use_store(args.store)
     written = render_doc(args.doc, cfg)
     if not written:
         print(f"No components for {args.doc}. Run scripts.ingest first.")

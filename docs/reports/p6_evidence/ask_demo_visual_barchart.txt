@@ -1,0 +1,28 @@
+Q: In the bar chart of people uninsured by age group, which age group had the highest uninsured rate in 2022?
+doc p60-281 [demo store] (344 components) | type visual (llm, conf 0.95) | branch weights {'text': 0.25, 'table': 0.15, 'figure': 0.6}
+
+ANSWER: 24.2 percent
+citations: E1
+
+EVIDENCE
+[E1] paragraph p17  p60-281_p17_paragraph_4
+      As the income-to-poverty ratio increased, the percentage of uninsured in 2022 decreased for children under 19 years old and working-age adults aged 19 to 64 ...
+      ctx1 heading p17: Health Insurance by Type and Income-to-Poverty Ratio for Children Under the Age of 19 and
+      ctx2 paragraph p17: resources may determine the ability to afford private health insurance, and families be...
+      ctx3 paragraph p17: U.S. Census Bureau
+      why: visual (text 0.25) | bm25 15.28->0.67, bge 0.77->0.98, fused 0.191, CE 7.11 | terms: uninsured, age, highest, rate, 2022 | Page 17 -> Section 'Health Insurance by Type and Income-t...' -> Paragraph 4 | bbox 455,1264,759,1410
+[E2] paragraph p14  p60-281_p14_paragraph_8
+      The uninsured rates for workingage adults aged 19 to 64 by income-to-poverty group were lower in expansion states compared with nonexpansion states. In 2022,...
+      ctx1 heading p14: Working-Age Adults 19 to 64 Years Old
+      ctx2 paragraph p14: For working-age adults aged 19 to 64, health insurance coverage may be related to both ...
+      ctx3 paragraph p14: 8 Health Insurance Coverage in the United States: 2022
+      why: visual (text 0.25) | bm25 10.78->0.47, bge 0.71->0.86, fused 0.147, CE 6.11 | terms: uninsured, group, rate, 2022 | Page 14 -> Section 'Working-Age Adults 19 to 64 Years Old' -> Paragraph 8 | bbox 804,734,1113,1295
+[E3] paragraph p9   p60-281_p9_paragraph_7
+      The uninsured rate among working-age adults aged 19 to 64 decreased 0.8 percentage points to 10.8 percent between 2021 and 2022, driven in part by a decrease...
+      ctx1 heading p8: Highlights
+      ctx2 paragraph p9: increased by 0.3 percentage points to cover 18.7 percent of people (Table 1 and Figure ...
+      ctx3 heading p9: ESTIMATES OF HEALTH INSURANCE COVERAGE IN THE UNITED STATES
+      why: visual (text 0.25) | bm25 11.96->0.52, bge 0.76->0.94, fused 0.163, CE 6.05 | terms: uninsured, age, rate, 2022 | Page 9 -> Section 'Highlights' -> Paragraph 7 | bbox 107,845,417,1042
+
+timings ms: classify 1495, retrieve 346, normalize 1, fuse 1, rerank 2460, feedback 0, localize 0, expand 5, answer 664, provenance 1, total 4973
+LLM model openai/gpt-oss-20b | calls 1 cache_hits 0 tokens 1075 | prompt est 898 tokens, ids 12 | reranked list: 344 components

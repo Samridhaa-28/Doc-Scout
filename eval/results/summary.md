@@ -82,3 +82,19 @@ Component level (278 questions):
 | hybrid_weighted_hard | **0.313** | **0.428** | 0.432 | 0.470 | 0.408 |
 | hybrid_weighted_soft_rerank | **0.437** | **0.610** | 0.673 | 0.780 | 0.637 |
 | hybrid_weighted_soft_goldtype (analysis: gold types) | **0.432** | **0.597** | 0.666 | 0.747 | 0.613 |
+
+## TEST: answer quality (ANLS, P6)
+
+System: hybrid_weighted_soft_rerank + grounded answering with `openai/gpt-oss-20b` (temperature 0, JSON output, citations validated). "Not found" and answers without a valid citation score 0. Gold types: DocVQA question_types mapping (P5).
+
+ANLS with 95% percentile bootstrap CI over questions (2000 resamples, seed 42); per-type n in brackets.
+
+| setting | n | ANLS [95% CI] | numerical | textual | visual | not found | no valid citation | invalid citation ids |
+|---|---|---|---|---|---|---|---|---|
+| (a) top-1 evidence only | 217 | **0.486** [0.424, 0.546] | 0.515 [0.419, 0.609] (106) | 0.466 [0.375, 0.561] (103) | 0.344 [0.094, 0.688] (8) | 38.2% (83) | 0 | 0 in 0 q |
+| (b) top-3 + graph context + localized cells | 217 | **0.646** [0.585, 0.707] | 0.674 [0.585, 0.764] (106) | 0.632 [0.543, 0.725] (103) | 0.457 [0.125, 0.787] (8) | 15.7% (34) | 0 | 0 in 0 q |
+| (c) oracle: gold answer page as evidence | 40 | **0.791** [0.666, 0.910] | 0.778 [0.604, 0.913] (23) | 0.798 [0.596, 0.985] (16) | 1.000 [1.000, 1.000] (1) | 15.0% (6) | 0 | 0 in 0 q |
+
+Paired (b) - (a) on the same 217 questions: +0.161 [+0.103, +0.218]; numerical +0.159 [+0.073, +0.247] (n=106); textual +0.166 [+0.086, +0.250] (n=103); visual +0.114 [+0.000, +0.341] (n=8). (b) better on 47, (a) better on 11.
+
+Same 40 oracle-sample questions: (a) 0.545, (b) 0.740, oracle 0.791.

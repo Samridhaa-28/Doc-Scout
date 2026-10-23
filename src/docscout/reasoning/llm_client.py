@@ -4,7 +4,7 @@
   `llm` section of configs/config.yaml. The key is never logged or written anywhere.
 - Cache: one JSON line per response in `llm.cache_path`, keyed by sha256(provider, model, messages, temperature).
 - Retries: 429, 5xx and connection/timeout errors are retried `max_retries` times with exponential backoff
-  (or the server's Retry-After, if larger). Other errors (400, 401, ...) fail immediately.
+  (or the server's Retry-After, if larger, honoured up to max_retry_after_s). Other errors (400, 401, ...) fail immediately.
 - A minimum gap (`min_interval_s`) is kept between real API calls; cache hits are not delayed.
 
 Usage:
@@ -15,15 +15,19 @@ Usage:
 from __future__ import annotations
 
 import hashlib
+import logging
 import json
 import threading
 import time
+from collections import deque
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from docscout.config import get_config, get_secret
+
+log = logging.getLogger(__name__)
 
 Messages = List[Dict[str, str]]
 Usage = Dict[str, int]
@@ -172,7 +176,8 @@ class LLMClient:
     def __init__(self, provider: LLMProvider, model: str, temperature: float = 0.0, max_tokens: int = 512,
                  max_retries: int = 5, backoff_base_s: float = 2.0, backoff_max_s: float = 60.0,
                  min_interval_s: float = 0.0, cache_path: Optional[Path] = None,
-                 sleep: Callable[[float], None] = time.sleep, clock: Callable[[], float] = time.monotonic) -> None:
+                 sleep: Callable[[float], None] = time.sleep, clock: Callable[[], float] = time.monotonic,
+                 tokens_per_minute: int = 0, max_retry_after_s: float = 900.0) -> None:
         self.provider, self.model = provider, model
         self.temperature, self.max_tokens = temperature, max_tokens
         self.max_retries, self.backoff_base_s, self.backoff_max_s = max_retries, backoff_base_s, backoff_max_s
@@ -181,6 +186,9 @@ class LLMClient:
         self.stats = LLMStats()
         self._sleep, self._clock = sleep, clock
         self._last_call: Optional[float] = None
+        self.max_retry_after_s = float(max_retry_after_s)  # a server Retry-After is honoured up to this (not backoff_max_s)
+        self.tokens_per_minute = int(tokens_per_minute or 0)  # 0 = no client-side token budget
+        self._token_log: "deque[Tuple[float, int]]" = deque()  # (time of real call, total tokens)
 
     def _wait_gap(self) -> None:
         if self._last_call is not None and self.min_interval_s > 0:
@@ -188,9 +196,28 @@ class LLMClient:
             if wait > 0:
                 self._sleep(wait)
 
+    def _wait_tokens(self, est_tokens: int) -> None:
+        """Keep the tokens of real calls in any rolling 60 s window under tokens_per_minute (estimate first)."""
+        if self.tokens_per_minute <= 0:
+            return
+        while True:
+            now = self._clock()
+            while self._token_log and now - self._token_log[0][0] >= 60.0:
+                self._token_log.popleft()
+            used = sum(t for _, t in self._token_log)
+            if not self._token_log or used + est_tokens <= self.tokens_per_minute:
+                return
+            self._sleep(max(0.1, 60.0 - (now - self._token_log[0][0])))
+
+    @staticmethod
+    def estimate_call_tokens(messages: Messages, max_tokens: int) -> int:
+        """Prompt chars / 4 plus half the completion budget (gpt-oss also spends hidden reasoning tokens)."""
+        return sum(len(m["content"]) for m in messages) // 4 + max_tokens // 2
+
     def _call_with_retries(self, messages: Messages, json_mode: bool) -> Tuple[str, Usage]:
         last: Optional[Exception] = None
         for attempt in range(self.max_retries + 1):
+            self._wait_tokens(self.estimate_call_tokens(messages, self.max_tokens))
             self._wait_gap()
             t0 = time.perf_counter()
             try:
@@ -198,6 +225,7 @@ class LLMClient:
                 self.stats.calls += 1
                 text, usage = self.provider.complete(messages, self.model, self.temperature, self.max_tokens, json_mode)
                 self.stats.seconds_in_api += time.perf_counter() - t0
+                self._token_log.append((self._clock(), usage.get("prompt_tokens", 0) + usage.get("completion_tokens", 0)))
                 return text, usage
             except RetryableError as e:
                 self.stats.seconds_in_api += time.perf_counter() - t0
@@ -207,7 +235,10 @@ class LLMClient:
                 self.stats.retries += 1
                 wait = min(self.backoff_max_s, self.backoff_base_s * (2 ** attempt))
                 if e.retry_after is not None:
-                    wait = max(wait, min(self.backoff_max_s, e.retry_after))
+                    # wait out the server's Retry-After (rolling quota) instead of re-trying early and burning requests
+                    wait = max(wait, min(self.max_retry_after_s, e.retry_after))
+                log.warning("LLM retry %d/%d after %s (status %s, retry-after %s): waiting %.1fs", attempt + 1,
+                            self.max_retries, e, e.status, e.retry_after, wait)
                 self._sleep(wait)
         raise LLMError(f"LLM call failed after {self.max_retries} retries: {last}")
 
@@ -241,13 +272,18 @@ class LLMClient:
 _CLIENT: Optional[LLMClient] = None
 
 
-def get_client(cfg: Optional[dict] = None) -> LLMClient:
-    """Build (once per process) the configured client. Raises MissingKeyError if LLM_API_KEY is not set."""
+def get_client(cfg: Optional[dict] = None, model: Optional[str] = None) -> LLMClient:
+    """Build (once per process) the configured client. Raises MissingKeyError if LLM_API_KEY is not set.
+
+    `model` overrides llm.model (e.g. llm.demo_model for scripts.ask --demo); such a client is not shared."""
     global _CLIENT
-    if _CLIENT is not None and cfg is None:
+    if _CLIENT is not None and cfg is None and model is None:
         return _CLIENT
+    shared = cfg is None and model is None
     cfg = cfg or get_config()
-    llm = cfg["llm"]
+    llm = dict(cfg["llm"])
+    if model:
+        llm["model"] = model
     key = get_secret("LLM_API_KEY")
     if not key:
         raise MissingKeyError("LLM_API_KEY is missing in .env")
@@ -260,6 +296,9 @@ def get_client(cfg: Optional[dict] = None) -> LLMClient:
                        max_tokens=int(llm.get("max_tokens", 512)), max_retries=int(llm.get("max_retries", 5)),
                        backoff_base_s=float(llm.get("backoff_base_s", 2.0)),
                        backoff_max_s=float(llm.get("backoff_max_s", 60.0)),
-                       min_interval_s=float(llm.get("min_interval_s", 0.0)), cache_path=llm.get("cache_path"))
-    _CLIENT = client
+                       min_interval_s=float(llm.get("min_interval_s", 0.0)), cache_path=llm.get("cache_path"),
+                       tokens_per_minute=int(llm.get("tokens_per_minute", 0) or 0),
+                       max_retry_after_s=float(llm.get("max_retry_after_s", 900)))
+    if shared:
+        _CLIENT = client
     return client
