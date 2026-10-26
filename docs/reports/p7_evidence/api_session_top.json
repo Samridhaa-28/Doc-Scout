@@ -1,0 +1,218 @@
+{
+ "session_id": "3a39b6af4d3f41d8bb5e8d6c2d63f45d",
+ "query_id": "3b81d2ce44ba499eb84331045c770797",
+ "top": {
+  "id": "p60-281_p8_table_0",
+  "eid": "E1",
+  "rank": 1,
+  "type": "table",
+  "page": 8,
+  "branch": "table",
+  "bbox": [
+   103.52,
+   854.95,
+   1120.14,
+   1193.91
+  ],
+  "page_size": [
+   1224,
+   1584
+  ],
+  "text": "Table: (Numbers in thousands. Margins of error in thousands or percentage points as appropriate. Population as of March of the following year. Information on confidentiality protection, sampling error, nonsampling error, and definitions is available at <https://www2.census.gov/programs-surveys/cps/techdocs/cpsmar23.pdf>)\nColumns: Coverage type | 2021.Number | 2021.Margin of error 1 (\u00b1) | 2021.Percent | 2021.Margin of error 1 (\u00b1).1 | 2022.Number | 2022.Margin of error 1 (\u00b1) | 2022.Percent | 2022.Margin of error 1 (\u00b1).1 | Change in.percent (2022 less 2021)\nRows: Total. . . . . . . . . . . . . . .; Any health plan. . . . . . . . . . . . . 300,900; Any private plan 2, 3 . . . . . . . . . .; Empl",
+  "graph_path": "Page 8 -> Section 'Number and Percentage of People by He...' -> Table 0",
+  "why": "numerical (table 0.6) | bm25 2.01->0.41, bge 0.85->1.00, fused 0.352, CE 0.43, fb +0.10 | pinned | terms: medicaid, coverage, 2022, thousands | Page 8 -> Section 'Number and Percentage of People by He...' -> Table 0 | bbox 104,855,1120,1194",
+  "scores": {
+   "bm25_raw": 2.012574659284948,
+   "bm25_norm": 0.4105858785442847,
+   "dense_bge_raw": 0.8490153684947496,
+   "dense_bge_norm": 1.0,
+   "fused": 0.35244606898859954,
+   "rerank": 0.4258216619491577,
+   "feedback": 0.10463693609656877,
+   "final": 10.755847149108005
+  },
+  "feedback_tag": "pinned",
+  "matched_terms": [
+   "medicaid",
+   "coverage",
+   "2022",
+   "thousands"
+  ],
+  "localized_cells": [
+   [
+    "Marketplace coverage 2",
+    "2022.Number",
+    "11,840"
+   ],
+   [
+    "Marketplace coverage 2",
+    "2022.Margin of error 1 (\u00b1)",
+    "461"
+   ],
+   [
+    "Marketplace coverage 2",
+    "2022.Percent",
+    "3.6"
+   ],
+   [
+    "Marketplace coverage 2",
+    "2022.Margin of error 1 (\u00b1) (1)",
+    "0.1"
+   ],
+   [
+    "Marketplace coverage 2",
+    "Change in.percent (2022 less 2021)",
+    "0.1"
+   ],
+   [
+    "Medicaid 2",
+    "2022.Number",
+    "62,050"
+   ],
+   [
+    "Medicaid 2",
+    "2022.Margin of error 1 (\u00b1)",
+    "1,112"
+   ],
+   [
+    "Medicaid 2",
+    "2022.Percent",
+    "18.8"
+   ],
+   [
+    "Medicaid 2",
+    "2022.Margin of error 1 (\u00b1) (1)",
+    "0.3"
+   ],
+   [
+    "Medicaid 2",
+    "Change in.percent (2022 less 2021)",
+    "-0.1"
+   ]
+  ],
+  "localize_flag": "cell",
+  "cell_boxes": [
+   {
+    "row": "Marketplace coverage 2",
+    "column": "2022.Number",
+    "value": "11,840",
+    "bbox": [
+     720.930419921875,
+     1048.095947265625,
+     773.7302856445312,
+     1067.904052734375
+    ]
+   },
+   {
+    "row": "Marketplace coverage 2",
+    "column": "2022.Margin of error 1 (\u00b1)",
+    "value": "461",
+    "bbox": [
+     829.3624267578125,
+     1048.095947265625,
+     858.162353515625,
+     1067.904052734375
+    ]
+   },
+   {
+    "row": "Marketplace coverage 2",
+    "column": "2022.Percent",
+    "value": "3.6",
+    "bbox": [
+     916.1624145507812,
+     1048.095947265625,
+     940.162353515625,
+     1067.904052734375
+    ]
+   },
+   {
+    "row": "Marketplace coverage 2",
+    "column": "2022.Margin of error 1 (\u00b1) (1)",
+    "value": "0.1",
+    "bbox": [
+     1089.986572265625,
+     1010.0960083007812,
+     1113.986572265625,
+     1029.904052734375
+    ]
+   },
+   {
+    "row": "Marketplace coverage 2",
+    "column": "Change in.percent (2022 less 2021)",
+    "value": "0.1",
+    "bbox": [
+     1089.986572265625,
+     1010.0960083007812,
+     1113.986572265625,
+     1029.904052734375
+    ]
+   },
+   {
+    "row": "Medicaid 2",
+    "column": "2022.Number",
+    "value": "62,050",
+    "bbox": [
+     720.930419921875,
+     1129.095947265625,
+     773.7302856445312,
+     1148.904052734375
+    ]
+   },
+   {
+    "row": "Medicaid 2",
+    "column": "2022.Margin of error 1 (\u00b1)",
+    "value": "1,112",
+    "bbox": [
+     814.96240234375,
+     1129.095947265625,
+     858.1622924804688,
+     1148.904052734375
+    ]
+   },
+   {
+    "row": "Medicaid 2",
+    "column": "2022.Percent",
+    "value": "18.8",
+    "bbox": [
+     906.5623779296875,
+     1129.095947265625,
+     940.1622924804688,
+     1148.904052734375
+    ]
+   },
+   {
+    "row": "Medicaid 2",
+    "column": "2022.Margin of error 1 (\u00b1) (1)",
+    "value": "0.3",
+    "bbox": [
+     665.298583984375,
+     991.0960083007812,
+     689.2985229492188,
+     1010.9039916992188
+    ]
+   }
+  ],
+  "table_preview": "| Coverage type | 2021.Number | 2021.Margin of error 1 (\u00b1) | 2021.Percent | 2021.Margin of error 1 (\u00b1) (1) | 2022.Number | 2022.Margin of error 1 (\u00b1) | 2022.Percent | 2022.Margin of error 1 (\u00b1) (1) | Change in.percent (2022 less 2021) |\n|---|---|---|---|---|---|---|---|---|---|\n| Total | 328,100 | 148 | X | X | 330,000 | 130 | X | X | X |\n| Any health plan. . . . . . . . . . . . . 300,900 |  | 748 | 91.7 | 0.2 | 304,000 | 746 | 92.1 | 0.2 | *0.4 |\n| Any private plan 2, 3 | 216,400 | 1,077 | 66.0 | 0.3 | 216,500 | 1,399 | 65.6 | 0.4 | -0.3 |\n| Employment-based 2 | 178,300 | 1,123 | 54.3 | 0.3 | 179,800 | 1,369 | 54.5 | 0.4 | 0.1 |\n| Direct-purchase 2 | 33,550 | 705 | 10.2 | 0.2 | 32,800 | 661 | 9.9 | 0.2 | *-0.3 |\n| Marketplace coverage 2 | 11,390 | 447 | 3.5 | 0.1 | 11,840 | 461 | 3.6 | 0.1 | 0.1 |\n(... 6 more rows)",
+  "reserved_slot": null,
+  "context": [
+   {
+    "id": "p60-281_p8_heading_1",
+    "type": "heading",
+    "page": 8,
+    "text": "Number and Percentage of People by Health Insurance Coverage Status and Type: 2021 to 2022"
+   },
+   {
+    "id": "p60-281_p8_paragraph_2",
+    "type": "paragraph",
+    "page": 8,
+    "text": "(Numbers in thousands. Margins of error in thousands or percentage points as appropriate. Population as of March of the following year. Information on confidentiality protection, sampling error, nonsa"
+   },
+   {
+    "id": "p60-281_p8_paragraph_3",
+    "type": "paragraph",
+    "page": 8,
+    "text": "* An asterisk preceding an estimate indicates change is statistically different from zero at the 90 percent confidence level."
+   }
+  ]
+ }
+}

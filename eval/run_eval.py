@@ -238,6 +238,9 @@ def write_summary(results_dir: Path, baseline: Dict[str, Dict[str, Dict[str, flo
     from eval.eval_answers import summary_section  # P6: ANLS table, if eval/results/answers.json exists
 
     lines += summary_section(results_dir)
+    from eval.eval_feedback import summary_section as feedback_section  # P7: simulated relevance feedback
+
+    lines += feedback_section(results_dir)
     out = results_dir / "summary.md"
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return out

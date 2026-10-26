@@ -1,0 +1,6 @@
+DEV: 69 questions with component qrels | query types {'numerical': 32, 'visual': 4, 'textual': 33} | classifier LLM calls 0 | round 1 85s
+related          pairs  172 fired   22 | MRR +0.0070 [0.0002653193060169804, 0.01614669850498334] | R@1 +0.0116 | nDCG@5 +0.0080 | better 5 worse 0
+related_fired    pairs   22 fired   22 | MRR +0.0551 [0.002074314574314574, 0.12203508297258292] | R@1 +0.0909 | nDCG@5 +0.0623 | better 5 worse 0
+unrelated        pairs  426 fired   34 | MRR +0.0003 [-0.0008150756390193009, 0.001453163424994411] | R@1 +0.0000 | nDCG@5 +0.0021 | better 4 worse 5
+unrelated_fired  pairs   34 fired   34 | MRR +0.0033 [-0.009416645446057208, 0.018499994694847637] | R@1 +0.0000 | nDCG@5 +0.0264 | better 4 worse 5
+pairs 598 on 10 docs | related passing sim+qtype gate 22 | related with the shared gold up-voted by A 109 | same-doc cosine q10/q50/q90 ['0.39', '0.51', '0.76']

@@ -1,0 +1,40 @@
+Q: According to Figure 2, which age group had the highest uninsured rate in 2022?
+doc p60-281 [demo store] (344 components) | type visual (llm, conf 0.99) | branch weights {'text': 0.25, 'table': 0.15, 'figure': 0.6}
+
+ANSWER: 14.0 percent
+citations: E2
+
+EVIDENCE
+[E1] paragraph p17  p60-281_p17_paragraph_4
+      As the income-to-poverty ratio increased, the percentage of uninsured in 2022 decreased for children under 19 years old and working-age adults aged 19 to 64 ...
+      ctx1 heading p17: Health Insurance by Type and Income-to-Poverty Ratio for Children Under the Age of 19 and
+      ctx2 paragraph p17: resources may determine the ability to afford private health insurance, and families be...
+      ctx3 paragraph p17: U.S. Census Bureau
+      why: visual (text 0.25) | bm25 11.44->1.00, bge 0.76->0.97, fused 0.248, CE 8.84 | terms: figure, age, highest, uninsured, rate, 2022 | Page 17 -> Section 'Health Insurance by Type and Income-t...' -> Paragraph 4 | bbox 455,1264,759,1410
+[E2] paragraph p10  p60-281_p10_paragraph_2
+      Between 2021 and 2022, the uninsured rate for working-age adults aged 19 to 64 decreased 0.8 percentage points. When looking at specific age groups of those ...
+      ctx1 heading p10: Health Insurance Coverage by Age
+      ctx2 paragraph p10: Children and young adults may receive coverage through a parent or guardian's plan up t...
+      ctx3 heading p10: Private Coverage
+      why: visual (text 0.25) | bm25 11.09->0.97, bge 0.74->0.93, fused 0.239, CE 7.20 | terms: figure, 2, age, highest, uninsured, rate, 2022 | Page 10 -> Section 'Health Insurance Coverage by Age' -> Paragraph 2 | bbox 456,304,757,813
+[E3] paragraph p16  p60-281_p16_paragraph_5
+      For adults aged 19 to 64 who were between 100 and 399 percent of their poverty threshold in nonexpansion states, the uninsured rate fell by 2.1 percentage po...
+      ctx1 heading p14: Working-Age Adults 19 to 64 Years Old
+      ctx2 paragraph p16: Source: U.S. Census Bureau, Current Population Survey, 2022 and 2023 Annual Social and ...
+      ctx3 heading p16: PUBLIC AND PRIVATE HEALTH INSURANCE COVERAGE BY SELECTED CHARACTERISTICS
+      why: visual (text 0.25) | bm25 6.01->0.52, bge 0.70->0.85, fused 0.156, CE 7.02 | terms: age, uninsured, rate, 2022 | Page 16 -> Section 'Working-Age Adults 19 to 64 Years Old' -> Paragraph 5 | bbox 106,1005,410,1333
+[E4] paragraph p9   p60-281_p9_paragraph_7
+      The uninsured rate among working-age adults aged 19 to 64 decreased 0.8 percentage points to 10.8 percent between 2021 and 2022, driven in part by a decrease...
+      ctx1 heading p8: Highlights
+      ctx2 paragraph p9: increased by 0.3 percentage points to cover 18.7 percent of people (Table 1 and Figure ...
+      ctx3 heading p9: ESTIMATES OF HEALTH INSURANCE COVERAGE IN THE UNITED STATES
+      why: visual (text 0.25) | bm25 9.94->0.87, bge 0.74->0.92, fused 0.221, CE 6.98 | terms: figure, age, uninsured, rate, 2022 | Page 9 -> Section 'Highlights' -> Paragraph 7 | bbox 107,845,417,1042
+[E5] figure    p16  p60-281_p16_figure_0
+      17.8 17.0 13.7 12.4 36.4 37.9 22.6 20.5 17.0 16.2 6.2 5.4 3.8 3.3 9.2 8.4 Total* At or above 400% of poverty Between 100% and 399% of poverty* Below 100% of ...
+      ctx1 caption p16: Figure 6. Uninsured Rate by Income-to-Poverty Ratio and Medicaid Expansion Status of St...
+      ctx2 paragraph p16: (Population of adults aged 19 to 64 as of March of the following year)
+      ctx3 figure p16: 1.5 -2.1* -0.8* -0.9 -1.3* -0.6* -0.8 -0.8*
+      why: visual (figure 0.6) | bm25 3.90->1.00, bge 0.71->1.00, clip 0.29->0.46, fused 0.525, CE 5.44 | terms: figure, uninsured, rate, 2022 | Page 16 -> Section 'Working-Age Adults 19 to 64 Years Old' -> Figure 0 | bbox 133,235,1094,549 | slot: best fused figure
+
+timings ms: classify 502, retrieve 61, normalize 0, fuse 1, rerank 1814, feedback 0, localize 2, expand 3, answer 1621, provenance 0, total 4005
+LLM model openai/gpt-oss-20b | calls 1 cache_hits 0 tokens 1756 | prompt est 1464 tokens, ids 20 | reranked list: 344 components

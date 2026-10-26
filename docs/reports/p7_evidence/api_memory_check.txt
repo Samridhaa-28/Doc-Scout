@@ -1,0 +1,15 @@
+health: {'ok': True, 'stores': {'eval': 49, 'demo': 1}, 'votes': 23}
+memory=True: session 472f1314 | memory {'on': True, 'prior_items': 2} | feedback_active True
+   E1 p60-281_p8_paragraph_12      tag=-        fb=+0.000
+   E2 p60-281_p9_paragraph_9       tag=-        fb=+0.000
+   E3 p60-281_p12_paragraph_2      tag=-        fb=+0.000
+   E4 p60-281_p18_paragraph_6      tag=-        fb=+0.000
+   E5 p60-281_p6_table_0           tag=memory   fb=-0.150
+memory=False: session 87061042 | memory {'on': False, 'prior_items': 0} | feedback_active False
+   E1 p60-281_p8_paragraph_12      tag=-        fb=+0.000
+   E2 p60-281_p9_paragraph_9       tag=-        fb=+0.000
+   E3 p60-281_p12_paragraph_2      tag=-        fb=+0.000
+   E4 p60-281_p18_paragraph_6      tag=-        fb=+0.000
+   E5 p60-281_p6_table_0           tag=-        fb=+0.000
+memory=True: p8 table at displayed position 8 (tag=memory, fb=+0.150)
+memory=False: p8 table at displayed position 12

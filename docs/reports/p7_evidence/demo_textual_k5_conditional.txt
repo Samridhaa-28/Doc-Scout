@@ -1,0 +1,36 @@
+Q: Which subtype of health insurance was the most common?
+doc p60-281 [demo store] (344 components) | type textual (llm, conf 0.95) | branch weights {'text': 0.4, 'table': 0.375, 'figure': 0.225}
+
+ANSWER: employment-based insurance
+citations: E1
+
+EVIDENCE
+[E1] paragraph p9   p60-281_p9_paragraph_10
+      Employment-based insurance was the most common subtype of health insurance in the civilian, noninstitutionalized population (54.5 percent), followed by Medic...
+      ctx1 heading p9: ESTIMATES OF HEALTH INSURANCE COVERAGE IN THE UNITED STATES
+      ctx2 paragraph p9: In 2022, most people (92.1 percent) had health insurance coverage at some point during ...
+      ctx3 paragraph p9: The percentage of people covered by any type of health insurance in 2022 was higher tha...
+      why: textual (text 0.4) | bm25 8.77->1.00, bge 0.76->1.00, fused 0.400, CE 9.33 | terms: subtype, health, insurance, common | Page 9 -> Section 'ESTIMATES OF HEALTH INSURANCE COVERAG...' -> Paragraph 10 | bbox 455,1145,761,1420
+[E2] paragraph p8   p60-281_p8_paragraph_14
+      Of the subtypes of health insurance coverage, employment-based insurance was the most common, covering 54.5 percent of the population for some or all of the ...
+      ctx1 heading p8: Highlights
+      ctx2 paragraph p8: In 2022, private health insurance coverage continued to be more prevalent than public c...
+      ctx3 paragraph p8: Between 2021 and 2022, the rate of Medicare coverage
+      why: textual (text 0.4) | bm25 4.37->0.50, bge 0.74->0.96, fused 0.255, CE 9.09 | terms: health, insurance, common | Page 8 -> Section 'Highlights' -> Paragraph 14 | bbox 803,278,1107,657
+[E3] heading   p10  p60-281_p10_heading_0
+      HEALTH INSURANCE COVERAGE BY TYPE AND SELECTED CHARACTERISTICS
+      ctx1 heading p10: Health Insurance Coverage by Age
+      ctx2 paragraph p10: Age is associated with the likelihood that a person has health insurance coverage, as w...
+      why: textual (text 0.4) | bm25 1.49->0.17, bge 0.67->0.84, fused 0.148, CE -2.39 | terms: health, insurance | Page 10 -> Heading 0 | bbox 107,310,419,376
+[E4] paragraph p9   p60-281_p9_paragraph_8
+      This report classifies health insurance coverage into three different categories: overall coverage, private coverage, and public coverage (refer to the "What...
+      ctx1 paragraph p9: The uninsured rate among working-age adults aged 19 to 64 decreased 0.8 percentage poin...
+      why: textual (text 0.4) | bm25 1.44->0.16, bge 0.60->0.70, fused 0.130, CE -2.82 | terms: health, insurance | Page 9 -> Section 'ESTIMATES OF HEALTH INSURANCE COVERAG...' -> Paragraph 8 | bbox 107,1159,420,1434
+[E5] heading   p16  p60-281_p16_heading_0
+      PUBLIC AND PRIVATE HEALTH INSURANCE COVERAGE BY SELECTED CHARACTERISTICS
+      ctx1 paragraph p16: For adults aged 19 to 64 who were between 100 and 399 percent of their poverty threshol...
+      ctx2 paragraph p16: The CPS ASEC can also be used to look more closely at health insurance coverage types f...
+      why: textual (text 0.4) | bm25 1.44->0.16, bge 0.63->0.76, fused 0.137, CE -3.47 | terms: health, insurance | Page 16 -> Heading 0 | bbox 455,1104,768,1170
+
+timings ms: classify 598, retrieve 66, normalize 0, fuse 1, rerank 1841, feedback 0, localize 3, expand 4, answer 0, provenance 0, total 2514
+LLM model openai/gpt-oss-20b | calls 0 cache_hits 1 tokens 0 | prompt est 1133 tokens, ids 16 | reranked list: 344 components

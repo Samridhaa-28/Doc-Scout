@@ -21,3 +21,8 @@ eval/results/*.jsonl
 
 # Notebooks
 .ipynb_checkpoints/
+
+# React UI (ui/)
+ui/node_modules/
+ui/dist/
+ui/*.tsbuildinfo

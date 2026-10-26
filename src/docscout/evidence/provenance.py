@@ -49,7 +49,7 @@ def _num(v: float) -> str:
 
 
 def why_line(c: Candidate, qtype: str, branch_weights: Mapping[str, float], terms: Sequence[str], path: str,
-             bbox: Optional[Sequence[float]] = None, feedback_delta: float = 0.0) -> str:
+             bbox: Optional[Sequence[float]] = None, feedback_delta: float = 0.0, feedback_tag: str = "") -> str:
     """One readable line explaining why the candidate was retrieved (format in the module docstring)."""
     parts = [f"{qtype} ({c.branch} {float(branch_weights.get(c.branch, 0.0)):g})"]
     sc = [f"{RETRIEVER_LABEL.get(r, r)} {_num(c.raw[r])}->{c.norm.get(r, 0.0):.2f}"
@@ -57,9 +57,11 @@ def why_line(c: Candidate, qtype: str, branch_weights: Mapping[str, float], term
     if c.fused is not None:
         sc.append(f"fused {c.fused:.3f}")
     sc.append(f"CE {c.rerank:.2f}" if c.rerank is not None else "CE -")
-    if feedback_delta:
+    if feedback_delta or feedback_tag:
         sc.append(f"fb {feedback_delta:+.2f}")
     parts.append(", ".join(sc))
+    if feedback_tag:
+        parts.append(feedback_tag)
     parts.append("terms: " + (", ".join(terms) if terms else "-"))
     if path:
         parts.append(path)
@@ -69,9 +71,14 @@ def why_line(c: Candidate, qtype: str, branch_weights: Mapping[str, float], term
 
 
 def provenance_record(c: Candidate, comp: Any, qtype: str, branch_weights: Mapping[str, float], query: str,
-                      path: str, feedback_delta: float = 0.0) -> Dict[str, Any]:
+                      path: str, feedback_delta: float = 0.0, feedback_tag: str = "") -> Dict[str, Any]:
     """Everything the UI / API needs to show where an evidence item came from and why."""
     terms = matched_terms(query, comp.text_form)
+    if feedback_tag:
+        rec = provenance_record(c, comp, qtype, branch_weights, query, path, feedback_delta)
+        rec["scores"]["feedback"] = float(feedback_delta)  # shown even when 0 while feedback is active
+        return {**rec, "feedback_tag": feedback_tag,
+                "why": why_line(c, qtype, branch_weights, terms, path, comp.bbox, feedback_delta, feedback_tag)}
     return {
         "page": int(comp.page), "type": comp.type, "bbox": list(comp.bbox),
         "page_size": [comp.page_width, comp.page_height], "graph_path": path, "branch": c.branch,

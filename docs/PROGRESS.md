@@ -232,3 +232,30 @@ Full report: [docs/reports/P6_REPORT.md](reports/P6_REPORT.md) · evidence: `doc
 - Demo ask.py comparison with/without slots at k=5 (deferred: Groq daily token budget).
 - The demo visual question fails at k=5 without slots (the cross-encoder pushes Figure 2 to about rank 25).
 - Groq has a rolling daily token budget (~200k/day observed); the client waits out Retry-After (`llm.max_retry_after_s`).
+
+## P7 (approved, 2026-10-26): Rocchio relevance feedback, cross-session memory, API, React UI
+Full report: [docs/reports/P7_REPORT.md](reports/P7_REPORT.md) · evidence: `docs/reports/p7_evidence/` · results: `eval/results/summary.md` (feedback sections) · rule: [docs/reports/P7_PREREGISTRATION.md](reports/P7_PREREGISTRATION.md)
+
+### What exists now
+- `src/docscout/feedback/`: `session_store.py` (SQLite `votes` table: evidence + answer votes, question vector), `rocchio.py` (`FeedbackHook` for the P6 `feedback_adjust` hook: q' = α q + β mean(up) − γ mean(down), dense re-score, re-fuse, CE on the new top 30, final = (1−λ) minmax(CE) + λ minmax(cos(q', d)); up-votes pinned, down-votes excluded), `memory.py` (`memory_prior`: same doc + qtype, question cosine ≥ 0.75, ≥ 2 votes, 30-day half-life, cap ±0.15; off by default).
+- `src/docscout/evidence/cell_boxes.py`: localized-cell boxes via PyMuPDF on digital PDFs (no box rather than a guess).
+- `api/main.py` (FastAPI): `POST /ask`, `POST /feedback` (re-rank, no LLM call), `GET /next` (no new retrieval), `GET /documents`, `GET /page-image/{doc}/{page}`; both stores loaded once.
+- `ui/` (Vite + React + TS): split view (answer + citation chips + confidence strip | page image with bbox and cell highlights), evidence cards with breadcrumb and score bars, click/keyboard voting with visible re-rank, Show next, memory toggle, Re-answer.
+- `eval/eval_feedback.py`: simulated feedback on the residual collection, pre-registered rule, memory test.
+- `scripts/ask.py --slots`. Tests: 160 passing.
+
+### Results
+- Step 0 (deferred from P6), demo at k = 5: conditional slots reserve the wrong table (p6) and figure (Figure 6); no answer changes. Default `answer.slots: conditional` unchanged.
+- Rocchio, rule kept the default β 0.75, γ 0.15, λ 0.3. Residual component MRR vs no feedback: DEV +0.091 [+0.011, +0.180] (34 q); TEST once +0.023 [−0.048, +0.091] (68 q), not significant. λ = 0 (literal pipeline) ≈ 0.
+- Memory (DEV, 598 ordered pairs): related pairs where it fired (22) MRR +0.055, 5 better / 0 worse; unrelated fired (34) mean +0.003, 5 individually worse (never at rank 1).
+- P5/P6 numbers unchanged: feedback off ⇒ final = raw CE; round 1 reproduces P5 (DEV R@1 0.2802, TEST R@1 0.488 / MRR 0.653).
+- Demo: down-vote the p6 table + up-vote the p8 table + Re-answer → "62,050" (was "Not found").
+
+### Decisions
+- This spec replaced PHASES.md P7 (React, Rocchio, no `/ingest` upload, `/documents` instead of `/docs`).
+- A vote never regenerates the answer; "Re-answer" is a new `/ask` in the same session.
+- Limitation 3 (slot reservation uses `fused`, ignores feedback) left as is by decision.
+
+### Pending (planned for P8)
+- PDF upload from the UI (`POST /ingest`); currently new PDFs go in via `scripts.ingest --store demo` + `build_indexes --store demo` + API restart.
+- P7 follow-ups (slot reservation vs feedback, memory gating) deferred to P8.

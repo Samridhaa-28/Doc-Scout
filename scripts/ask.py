@@ -30,6 +30,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--k", type=int, default=int(cfg["retrieval"].get("final_top_k", 5)), help="evidence items")
     ap.add_argument("--demo", action="store_true", help=f"answer with llm.demo_model ({cfg['llm'].get('demo_model')})")
     ap.add_argument("--json", action="store_true", help="print the full QueryResult as JSON")
+    ap.add_argument("--slots", choices=["off", "conditional", "both"], default=None,
+                    help="modality slot reservation (default: answer.slots in the config)")
     ap.add_argument("--store", choices=["eval", "demo"], default=None,
                     help="where DOC_ID lives (default: demo if it is in the demo store, else eval)")
     args = ap.parse_args(argv)
@@ -47,7 +49,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"unknown document {args.doc!r}: no components. Ingest it and rebuild the indexes first.")
         return 1
     pipe.warm_up()
-    res = pipe.answer(args.question, args.doc, top_k=args.k)
+    res = pipe.answer(args.question, args.doc, top_k=args.k, slots=args.slots)
     if args.json:
         print(json.dumps(res.to_dict(), ensure_ascii=False, indent=1, default=str))
         return 0

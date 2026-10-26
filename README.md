@@ -117,6 +117,44 @@ Re-run with `--force` to re-parse documents, or with `--reserialize` to recomput
 
 Results are written to `eval/results/summary.md`. The per-system JSON files are gitignored.
 
+Relevance feedback (P7, retrieval only, no LLM answer calls):
+
+```powershell
+.venv/Scripts/python -m eval.eval_feedback --split dev --grid      # pre-registered grid + selection rule
+.venv/Scripts/python -m eval.eval_feedback --split test             # chosen setting, TEST once
+.venv/Scripts/python -m eval.eval_feedback --memory-test            # cross-session memory, DEV
+```
+
+## API and UI (P7)
+
+The API loads both stores (eval + demo) and all models once at startup (about 1 minute). Votes go to
+`data/processed/feedback.sqlite`. Behind HTTPS-scanning antivirus, set `SSL_CERT_FILE` first (see above).
+
+```powershell
+.venv/Scripts/python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
+```
+
+Swagger UI: http://127.0.0.1:8000/docs. Endpoints: `POST /ask`, `POST /feedback`, `GET /next`, `GET /documents`,
+`GET /page-image/{doc_id}/{page}`.
+
+The UI (React + Vite + TypeScript, in `ui/`) needs Node 18+. In a second terminal:
+
+```powershell
+npm --prefix ui install
+npm --prefix ui run dev
+```
+
+Open http://localhost:5173. The dev server forwards `/api/*` to the API on port 8000 (set `DOCSCOUT_API` to change it).
+
+- Pick a document, ask a question, or click a sample question.
+- Left: the answer with citation chips and the confidence strip; evidence cards with the graph path, localized cells
+  and score bars (bm25 / bge / CE / fb). Right: the page with the selected box and, on digital PDFs, the cited cells.
+- Vote with the ▲ / ▼ buttons or the keyboard: `J` / `K` move, `↑` / `↓` vote, `N` shows the next item.
+  A vote re-ranks the list (session Rocchio: up-votes pinned, down-votes removed) without a new LLM call;
+  "Re-answer with current evidence" asks again in the same session.
+- The memory switch turns on the cross-session prior (off by default, `feedback.memory` in the config).
+- Scripted state for demos and screenshots: `?doc=p60-281&q=...&auto=down:<id>,up:<id>,reanswer&sel=<id>&still=1`.
+
 ## Tests
 
 ```powershell

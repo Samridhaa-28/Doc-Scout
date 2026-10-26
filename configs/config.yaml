@@ -116,9 +116,19 @@ answer:                            # grounded answer generation
   not_found: "Not found in the retrieved evidence"
   slots: conditional                # modality slot reservation: off | conditional | both (retrieval/slots.py); adopted on DEV by the pre-registered rule, P6 report 2.10 / 4.10
 
-feedback:
-  step: 0.05                       # added to rerank score per preference count
-  cap: 0.2                          # max absolute boost/penalty
+feedback:                          # P7 relevance feedback (all evaluations of P5/P6 run with feedback off)
+  db_path: data/processed/feedback.sqlite   # votes table (session + cross-session memory)
+  rocchio:                          # q' = alpha*q + beta*mean(up) - gamma*mean(down), normalized (BGE space)
+    alpha: 1.0
+    beta: 0.75
+    gamma: 0.15
+    lambda: 0.3                     # top-30: final = (1-lambda)*minmax(CE) + lambda*minmax(cos(q', d))
+  memory: off                       # cross-session memory prior (off by default)
+  step: 0.05                        # memory: boost per decayed vote
+  cap: 0.15                         # memory: max absolute boost/penalty on final (normalized scale)
+  min_votes: 2                      # memory: votes needed on a component
+  min_similarity: 0.75              # memory: BGE cosine to a past voted question
+  half_life_days: 30                # memory: vote weight 0.5 ** (age / half_life)
 
 llm:
   provider: groq
@@ -150,3 +160,10 @@ api:
   host: 127.0.0.1
   port: 8000
   base_url: http://127.0.0.1:8000
+  cors_origins: ["http://localhost:5173", "http://127.0.0.1:5173"]   # Vite dev server (ui/)
+  default_store: demo               # store whose first document the UI opens
+  demo_questions:                   # sample questions offered by GET /documents (the P6 demo questions)
+    p60-281:
+      - "How many people had Medicaid coverage in 2022, in thousands?"
+      - "Which subtype of health insurance was the most common?"
+      - "According to Figure 2, which age group had the highest uninsured rate in 2022?"

@@ -1,0 +1,9 @@
+TEST: 209 questions with component qrels | query types {'numerical': 95, 'textual': 104, 'visual': 10} | classifier LLM calls 0 | round 1 178s
+residual questions 68 / 209 (dropped 141), with >= 1 up-vote 16 | no-fb full-ranking r@1 0.4884, mrr 0.6526, ndcg@5 0.6435
+ranx check (no fb, residual): recall@1 0.1201, mrr 0.2892, ndcg@5 0.2706
+| system | R@1 | MRR | nDCG@5 | round-2 ms |
+| no feedback | 0.120 (+0.000 [+0.000, +0.000]) | 0.289 (+0.000 [+0.000, +0.000]) | 0.271 (+0.000 [+0.000, +0.000]) | - |
+| lambda0_literal | 0.110 (-0.010 [-0.044, +0.015]) | 0.294 (+0.004 [-0.020, +0.027]) | 0.271 (+0.000 [-0.018, +0.018]) | 10 |
+| b0.75_g0.15_l0.3 | 0.140 (+0.020 [-0.069, +0.101]) | 0.312 (+0.023 [-0.048, +0.091]) | 0.295 (+0.024 [-0.040, +0.089]) | 1 |
+total 184s
+wrote C:\Users\Samridhaa\OneDrive\Desktop\Doc-Scout\eval\results\feedback_test.json

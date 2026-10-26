@@ -170,7 +170,9 @@ class DocScoutPipeline:
         adj = feedback_adjust or identity_feedback
         out = adj(ranked, qtype, session_id)
         ranked = sort_candidates(out if out is not None else ranked)
-        fb_delta = {c.id: c.final - before.get(c.id, c.final) for c in ranked}
+        # a P7 FeedbackHook reports its own deltas (normalized scale) and tags; otherwise the change in final
+        fb_delta = dict(getattr(adj, "deltas", None) or {c.id: c.final - before.get(c.id, c.final) for c in ranked})
+        fb_tags: Dict[str, str] = dict(getattr(adj, "tags", None) or {})
         t0 = tick("feedback", t0)
 
         from docscout.retrieval.slots import reserve_modality_slots, slot_modalities
@@ -221,7 +223,8 @@ class DocScoutPipeline:
         t0 = tick("answer", t0)
 
         for i, (c, e) in enumerate(zip(top, evidence), start=1):
-            rec = provenance_record(c, e.component, qtype, bw, query, e.meta["graph_path"], fb_delta.get(c.id, 0.0))
+            rec = provenance_record(c, e.component, qtype, bw, query, e.meta["graph_path"], fb_delta.get(c.id, 0.0),
+                                    fb_tags.get(c.id, ""))
             e.scores = rec.pop("scores")
             e.why = rec["why"]
             e.meta.update({"eid": f"E{i}", "rank": i, **rec})
