@@ -193,7 +193,8 @@ DESC = {
     "src/docscout/feedback/session_store.py": "SQLite votes table (evidence + answer votes)",
     "src/docscout/feedback/rocchio.py": "session Rocchio FeedbackHook, pin / exclude, CE score cache",
     "src/docscout/feedback/memory.py": "cross-session memory prior (one function)",
-    "api/main.py": "FastAPI: /ask, /feedback, /next, /documents, /page-image",
+    "api/main.py": "FastAPI: /ask, /feedback, /next, /documents, /page-image; /ingest + /ingest/status (P8b)",
+    "ui/src/components/UploadButton.tsx": "Upload PDF button: POST /ingest, polls status, refreshes the document list (P8b)",
     "scripts/check_env.py": "entry: library check", "scripts/download_data.py": "entry: download MP-DocVQA subset",
     "scripts/explore_data.py": "entry: dataset stats", "scripts/ingest.py": "entry: parse + serialize + graph (--store, --limit)",
     "scripts/check_components.py": "entry: validate components", "scripts/visualize_components.py": "entry: draw overlays",
@@ -225,7 +226,7 @@ TEST_DESC = {
     "tests/test_graph_expander.py": (5, "context expansion"), "tests/test_pipeline_smoke.py": (6, "end to end with fakes, feedback hook"),
     "tests/test_slots.py": (6, "slot reservation variants"), "tests/test_table_locator.py": (14, "cell / row / column selection"),
     "tests/test_rocchio.py": (9, "Rocchio math, pin / exclude, lambda blend, identity"),
-    "tests/test_memory.py": (9, "votes store, memory gates"), "tests/test_api.py": (7, "all endpoints (TestClient)"),
+    "tests/test_memory.py": (9, "votes store, memory gates"), "tests/test_api.py": (9, "all endpoints incl. PDF upload (TestClient)"),
     "tests/test_cell_boxes.py": (2, "cell boxes on a synthetic PDF"),
 }
 
@@ -251,7 +252,7 @@ M3 = ["src/docscout/reasoning/llm_client.py", "src/docscout/reasoning/prompts.py
       "src/docscout/feedback/session_store.py", "src/docscout/feedback/rocchio.py", "src/docscout/feedback/memory.py",
       "api/main.py", "ui/src/App.tsx", "ui/src/api.ts", "ui/src/styles.css", "ui/src/components/AnswerPanel.tsx",
       "ui/src/components/EvidenceCard.tsx", "ui/src/components/PageViewer.tsx", "ui/src/components/ScoreBars.tsx",
-      "ui/src/main.tsx", "ui/index.html", "ui/package.json", "ui/tsconfig.json", "ui/vite.config.ts", "scripts/ask.py",
+      "ui/src/components/UploadButton.tsx", "ui/src/main.tsx", "ui/index.html", "ui/package.json", "ui/tsconfig.json", "ui/vite.config.ts", "scripts/ask.py",
       "tests/test_llm_client.py", "tests/test_answerer.py", "tests/test_pipeline_smoke.py", "tests/test_rocchio.py",
       "tests/test_memory.py", "tests/test_api.py", "tests/test_cell_boxes.py"]
 ROLES = [
@@ -395,7 +396,7 @@ def build_report(fp, contrib) -> Path:
                ["src/docscout/reasoning, evidence, feedback", "LLM answering, provenance, relevance feedback"],
                ["api/", "FastAPI service"], ["ui/", "React + Vite + TypeScript front end"],
                ["scripts/", "thin command-line entry points (argparse + one call)"], ["eval/", "evaluation code; eval/results/ outputs"],
-               ["tests/", "pytest suite (160 tests)"], ["configs/", "config.yaml"],
+               ["tests/", "pytest suite (162 tests)"], ["configs/", "config.yaml"],
                ["docs/", "PHASES, PROGRESS, phase reports + evidence, final package"]]
     add([table(folders, [5, 11]), Spacer(1, 8)])
     rows = [["Path", "What it contains", "Phase", "Lines"]]
@@ -674,7 +675,7 @@ def build_report(fp, contrib) -> Path:
 
     # 10 testing
     trows = [["Test file", "Tests", "What it covers"]] + [[f, str(n), d] for f, (n, d) in TEST_DESC.items()]
-    trows.append(["<b>Total</b>", "<b>160</b>", "pytest -> 160 passed (P7_REPORT 5)"])
+    trows.append(["<b>Total</b>", "<b>162</b>", "pytest -> 162 passed (160 in P7_REPORT 5 + 2 upload tests in P8b)"])
     add([P("10. Testing", H1),
          P("Unit and integration tests run on CPU without downloading large models: the LLM, the cross-encoder and the retrievers "
            "are faked where needed, and the API is tested with FastAPI's TestClient on a fake pipeline. The UI was checked with "
@@ -691,8 +692,9 @@ def build_report(fp, contrib) -> Path:
              "<b>Follow-up questions:</b> each question is answered on its own; there is no conversational context or query rewriting.",
              "<b>General-knowledge fallback:</b> by design the LLM answers only from evidence and says \"Not found\" otherwise; there is "
              "no optional, clearly labelled fallback to general knowledge.",
-             "<b>PDF upload:</b> new documents are added from the command line (scripts.ingest --store demo, build_indexes --store "
-             "demo --rebuild, API restart); the UI has no upload.",
+             "<b>PDF upload (added in P8b):</b> an Upload PDF button next to the dropdown sends the file to POST /ingest, which runs "
+             "the existing ingest and demo-index rebuild in the background (one upload at a time; 188 s for a 1-page PDF on CPU) and "
+             "reloads only the demo store; every upload rebuilds all demo indexes.",
              "<b>Cross-encoder vs tables/figures:</b> the CE prefers prose; on the demo it pushes Figure 2 to about rank 25 and Table 1 to "
              "rank 11, so the visual demo question fails at k = 5.",
              "<b>Lone-table normalization:</b> min-max lifts a lone table to the maximum branch score (hurts DEV page MRR before rerank).",

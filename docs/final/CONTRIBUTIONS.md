@@ -78,7 +78,7 @@ Files owned (24 files, 3,570 lines):
 
 Phases: P5 LLM client, P6 prompts/answerer/provenance/pipeline/ask.py, P7 Rocchio, memory, cell boxes, API, UI
 
-Files owned (30 files, 3,527 lines):
+Files owned (31 files, 3,785 lines):
 
 - `src/docscout/reasoning/llm_client.py`
 - `src/docscout/reasoning/prompts.py`
@@ -97,6 +97,7 @@ Files owned (30 files, 3,527 lines):
 - `ui/src/components/EvidenceCard.tsx`
 - `ui/src/components/PageViewer.tsx`
 - `ui/src/components/ScoreBars.tsx`
+- `ui/src/components/UploadButton.tsx`
 - `ui/src/main.tsx`
 - `ui/index.html`
 - `ui/package.json`

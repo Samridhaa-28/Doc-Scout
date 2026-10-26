@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { api, type AskResponse, type DocInfo, type Evidence } from "./api";
 import AnswerPanel from "./components/AnswerPanel";
+import UploadButton from "./components/UploadButton";
 import EvidenceCard from "./components/EvidenceCard";
 import PageViewer from "./components/PageViewer";
 
@@ -70,6 +71,9 @@ export default function App() {
       if (!docId && d.length) setDocId(d[0].doc_id);
     }).catch((e) => setError(String(e)));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // after an upload: reload the list only (the current selection stays as it is)
+  const refreshDocs = useCallback(() => { api.documents().then(setDocs).catch((e) => setError(String(e))); }, []);
 
   const doc = docs.find((d) => d.doc_id === docId);
   const selected = items.find((e) => e.id === selectedId);
@@ -196,6 +200,7 @@ export default function App() {
             ))}
           </select>
         </label>
+        <UploadButton onDone={refreshDocs} />
         <label className="toggle" title="cross-session memory: small capped prior from similar past questions">
           <input type="checkbox" checked={memory} onChange={(e) => setMemory(e.target.checked)} />
           <span className="knob" /> memory

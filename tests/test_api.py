@@ -141,3 +141,49 @@ def test_memory_flag_carries_votes_across_sessions(client):
     assert off["memory"] == {"on": False, "prior_items": 0} and off["feedback_active"] is False
     h = next(e for e in new["evidence"] if e["id"] == "d_p1_heading_0")
     assert h["feedback_tag"] == "memory" and h["scores"]["feedback"] == pytest.approx(0.10)
+
+
+def _fake_upload_env(client, tmp_path):
+    st = client.state
+    st.upload_dir = tmp_path / "pdfs"
+    calls = []
+
+    def runner(pdf, log):
+        calls.append(pdf.name)
+        log("fake ingest " + pdf.name)
+
+    def reload():  # like reload_demo_store: register the demo pipeline and its new document
+        from types import SimpleNamespace
+        st.pipelines["demo"] = SimpleNamespace(doc_sizes={"my-report": 3})
+        st.doc_store["my-report"] = "demo"
+        st.manifests["my-report"] = {"doc_id": "my-report", "source": "pdf", "pages": [], "store": "demo"}
+    st.ingest_runner, st.reload_demo = runner, reload
+    return calls
+
+
+def test_ingest_upload_runs_in_background_and_adds_document(client, tmp_path):
+    import time
+    calls = _fake_upload_env(client, tmp_path)
+    r = client.post("/ingest", files={"file": ("My Report.pdf", b"%PDF-1.4 fake", "application/pdf")})
+    assert r.status_code == 202 and r.json()["doc_id"] == "my-report"
+    for _ in range(100):
+        s = client.get("/ingest/status").json()
+        if s["status"] in ("done", "error"):
+            break
+        time.sleep(0.05)
+    assert s["status"] == "done", s
+    assert calls == ["My Report.pdf"] and (tmp_path / "pdfs" / "My Report.pdf").read_bytes() == b"%PDF-1.4 fake"
+    assert any("fake ingest" in line for line in s["log_tail"])
+    docs = [d["doc_id"] for d in client.get("/documents").json()]
+    assert "my-report" in docs and "d" in docs          # the new document is added; existing ones stay
+
+
+def test_ingest_rejects_non_pdf_and_concurrent_uploads(client, tmp_path):
+    calls = _fake_upload_env(client, tmp_path)
+    assert client.post("/ingest", files={"file": ("notes.txt", b"hello", "text/plain")}).status_code == 415
+    assert client.post("/ingest", files={"file": ("fake.pdf", b"not a pdf", "application/pdf")}).status_code == 415
+    client.state.ingest["status"] = "running"            # one upload at a time
+    r = client.post("/ingest", files={"file": ("second.pdf", b"%PDF-1.4", "application/pdf")})
+    assert r.status_code == 409 and calls == []
+    assert not (tmp_path / "pdfs" / "second.pdf").exists()
+    assert client.get("/ingest/status").json()["status"] == "running"

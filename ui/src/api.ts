@@ -89,7 +89,28 @@ export const api = {
   next: (session_id: string, query_id: string) =>
     call<NextResponse>(`/next?session_id=${encodeURIComponent(session_id)}&query_id=${encodeURIComponent(query_id)}`),
   pageImage: (doc: string, page: number) => `${BASE}/page-image/${encodeURIComponent(doc)}/${page}`,
+  upload: async (file: File): Promise<{ status: string; doc_id: string }> => {
+    const body = new FormData();
+    body.append("file", file);
+    const r = await fetch(`${BASE}/ingest`, { method: "POST", body });   // no JSON content-type: multipart
+    if (!r.ok) {
+      let detail = r.statusText;
+      try { detail = (await r.json()).detail ?? detail; } catch { /* not JSON */ }
+      throw new Error(`${r.status}: ${detail}`);
+    }
+    return r.json();
+  },
+  ingestStatus: () => call<IngestStatus>("/ingest/status"),
 };
+
+export interface IngestStatus {
+  status: "idle" | "queued" | "running" | "done" | "error";
+  file: string | null;
+  doc_id: string | null;
+  error: string | null;
+  log_tail: string[];
+  elapsed_s: number | null;
+}
 
 export const modalityOf = (type: string): Modality =>
   type === "table" ? "table" : type === "figure" ? "figure" : "text";

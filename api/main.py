@@ -11,15 +11,17 @@ Run: .venv/Scripts/python -m uvicorn api.main:app --port 8000      (Swagger UI a
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import threading
 import time
 import uuid
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -100,6 +102,22 @@ class AppState:
                 self.doc_store[d] = name
         self.queries: Dict[str, QueryState] = {}
         self.lock = threading.RLock()        # the pipelines are not thread-safe
+        # PDF upload (one job at a time): runner(pdf_path, log) ingests + rebuilds the demo indexes;
+        # reload_demo() swaps in a fresh demo-store pipeline. Both can be replaced (tests use fakes).
+        self.ingest: Dict[str, Any] = {"status": "idle", "file": None, "doc_id": None, "log": [], "error": None,
+                                       "started_at": None, "finished_at": None}
+        self.ingest_runner: Callable[[Path, Callable[[str], None]], None] = run_ingest_subprocesses
+        self.reload_demo: Callable[[], None] = lambda: reload_demo_store(self)
+        self.upload_dir: Path = Path(cfg["paths"]["pdfs_dir"]) if "paths" in cfg else Path("data/raw/pdfs")
+
+    def set_ingest(self, **kw: Any) -> None:
+        with self.lock:
+            self.ingest.update(kw)
+
+    def ingest_log(self, line: str) -> None:
+        log = self.ingest["log"]
+        log.append(line.rstrip()[:300])
+        del log[:-INGEST_LOG_LINES]
 
     def pipe_for(self, doc_id: str) -> Any:
         if doc_id not in self.doc_store:
@@ -107,37 +125,96 @@ class AppState:
         return self.pipelines[self.doc_store[doc_id]]
 
 
-def load_state() -> AppState:
-    """Load both stores (eval + demo, if built), sharing the model weights (lru-cached loaders)."""
+INGEST_LOG_LINES = 40
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+
+
+def run_ingest_subprocesses(pdf: Path, log: Callable[[str], None]) -> None:
+    """The existing CLI steps for one uploaded PDF: ingest it into the demo store, then rebuild the demo indexes."""
+    root = Path(__file__).resolve().parents[1]
+    steps = [[sys.executable, "-m", "scripts.ingest", "--source", "pdf", "--store", "demo", "--docs", pdf.name],
+             [sys.executable, "-m", "scripts.build_indexes", "--store", "demo", "--rebuild"]]
+    for cmd in steps:
+        log("$ " + " ".join(cmd[1:]))
+        proc = subprocess.Popen(cmd, cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                encoding="utf-8", errors="replace")
+        assert proc.stdout is not None
+        for line in proc.stdout:
+            for part in line.replace("\r", "\n").split("\n"):  # tqdm redraws with \r
+                if part.strip():
+                    log(part)
+        if proc.wait() != 0:
+            raise RuntimeError(f"{cmd[2]} exited with code {proc.returncode}")
+
+
+def reload_demo_store(state: "AppState") -> None:
+    """Swap in a freshly loaded demo-store pipeline (indexes rebuilt); the eval store is untouched."""
+    reranker = next(iter(state.pipelines.values())).reranker
+    loaded = load_store_pipeline("demo", reranker)
+    if loaded is None:
+        raise RuntimeError("demo store has no components after ingest")
+    pipe, manifests = loaded
+    pipe.warm_up()
+    with state.lock:
+        state.pipelines["demo"] = pipe
+        state.manifests.update(manifests)
+        for d in pipe.doc_sizes:
+            state.doc_store[d] = "demo"
+
+
+_STORE_CFG_LOCK = threading.Lock()
+
+
+def store_config(name: str) -> Dict[str, Any]:
+    """Config of one store, without leaving the process switched to it (other requests keep the eval config)."""
     from docscout.config import use_store
-    from docscout.feedback.session_store import FeedbackStore
+
+    with _STORE_CFG_LOCK:
+        cfg = use_store(name)
+        use_store(None)
+    return cfg
+
+
+def load_store_pipeline(name: str, reranker: Any) -> Optional[tuple]:
+    """(pipeline, manifests) for one store, or None if the store has no components yet."""
     from docscout.graph.builder import load_graph
     from docscout.indexing.build_all import load_index
     from docscout.pipeline import DocScoutPipeline
     from docscout.retrieval.retrievers import HybridRetriever
+    from docscout.schema import Component, iter_jsonl
+
+    cfg = store_config(name)
+    if not Path(cfg["paths"]["components_file"]).exists():
+        return None
+    comps = {r["id"]: Component.from_dict(r) for r in iter_jsonl(cfg["paths"]["components_file"])}
+    retr = HybridRetriever(load=lambda b, r, c=cfg: load_index(b, r, cfg=c, warn=False), comp_meta=comps, cfg=cfg)
+    gdir = cfg["paths"]["graphs_dir"]
+    pipe = DocScoutPipeline(cfg=cfg, retriever=retr, reranker=reranker, components=comps,
+                            graph_loader=lambda d, g=gdir: load_graph(d, g))
+    manifests: Dict[str, Dict[str, Any]] = {}
+    for f in sorted(Path(cfg["paths"]["docs_dir"]).glob("*.json")):
+        m = json.loads(f.read_text(encoding="utf-8"))
+        if m["doc_id"] in pipe.doc_sizes:
+            manifests[m["doc_id"]] = {**m, "store": name}
+    return pipe, manifests
+
+
+def load_state() -> AppState:
+    """Load both stores (eval + demo, if built), sharing the model weights (lru-cached loaders)."""
+    from docscout.config import use_store
+    from docscout.feedback.session_store import FeedbackStore
     from docscout.rerank.cross_encoder import CrossEncoderReranker
     from docscout.schema import iter_jsonl
 
     pipelines: Dict[str, Any] = {}
     manifests: Dict[str, Dict[str, Any]] = {}
-    reranker = None
+    reranker = CachingReranker(CrossEncoderReranker(cfg=store_config("eval")))
     for name in ("eval", "demo"):
-        cfg = use_store(name)
-        if not Path(cfg["paths"]["components_file"]).exists():
+        loaded = load_store_pipeline(name, reranker)
+        if loaded is None:
             continue
-        reranker = reranker or CachingReranker(CrossEncoderReranker(cfg=cfg))
-        from docscout.schema import Component
-
-        comps = {r["id"]: Component.from_dict(r) for r in iter_jsonl(cfg["paths"]["components_file"])}
-        retr = HybridRetriever(load=lambda b, r, c=cfg: load_index(b, r, cfg=c, warn=False), comp_meta=comps, cfg=cfg)
-        gdir = cfg["paths"]["graphs_dir"]
-        pipe = DocScoutPipeline(cfg=cfg, retriever=retr, reranker=reranker, components=comps,
-                                graph_loader=lambda d, g=gdir: load_graph(d, g))
-        pipelines[name] = pipe
-        for f in sorted(Path(cfg["paths"]["docs_dir"]).glob("*.json")):
-            m = json.loads(f.read_text(encoding="utf-8"))
-            if m["doc_id"] in pipe.doc_sizes:
-                manifests[m["doc_id"]] = {**m, "store": name}
+        pipelines[name], m = loaded
+        manifests.update(m)
     cfg = use_store(None)
     questions: Dict[str, List[str]] = {}
     qfile = Path(cfg["paths"]["questions_file"])
@@ -387,6 +464,59 @@ def create_app(state: Optional[AppState] = None) -> FastAPI:
                     return {"item": card_from_candidate(st, qs, c, len(qs.shown)), "position": i + 1,
                             "remaining": sum(1 for x in qs.ranked if x.id not in qs.shown)}
             return {"item": None, "message": "no further matches", "remaining": 0}
+
+    # ------------------------------------------------------------ PDF upload (added alongside /documents)
+    def _ingest_job(path: Path, doc_id: str) -> None:
+        st = S()
+        st.set_ingest(status="running")
+        try:
+            st.ingest_runner(path, st.ingest_log)
+            st.ingest_log("reloading the demo store ...")
+            st.reload_demo()
+            if doc_id not in st.doc_store:
+                raise RuntimeError(f"{doc_id} was not ingested (see the log)")
+            st.ingest_log(f"done: {doc_id} is available")
+            st.set_ingest(status="done", finished_at=time.time())
+        except Exception as e:  # noqa: BLE001 - reported through /ingest/status
+            st.ingest_log(f"error: {type(e).__name__}: {e}")
+            st.set_ingest(status="error", error=f"{type(e).__name__}: {e}", finished_at=time.time())
+
+    @app.post("/ingest", status_code=202)
+    def ingest(file: UploadFile = File(...)) -> Dict[str, Any]:
+        from docscout.ingestion.parser import safe_doc_id
+
+        st = S()
+        name = Path(file.filename or "").name
+        if not name.lower().endswith(".pdf"):
+            raise HTTPException(415, "only .pdf files are accepted")
+        data = file.file.read(MAX_UPLOAD_BYTES + 1)
+        if not data.startswith(b"%PDF"):
+            raise HTTPException(415, "the file is not a PDF")
+        if len(data) > MAX_UPLOAD_BYTES:
+            raise HTTPException(413, f"PDF larger than {MAX_UPLOAD_BYTES // (1024 * 1024)} MB")
+        doc_id = safe_doc_id(Path(name).stem)
+        with st.lock:
+            if st.ingest["status"] in ("queued", "running"):
+                raise HTTPException(409, f"an upload is already being processed ({st.ingest['file']})")
+            if doc_id in st.doc_store:
+                raise HTTPException(409, f"document {doc_id!r} already exists")
+            st.upload_dir.mkdir(parents=True, exist_ok=True)
+            path = st.upload_dir / name
+            if path.exists():
+                raise HTTPException(409, f"{name} already exists in {st.upload_dir.name}/")
+            path.write_bytes(data)
+            st.ingest = {"status": "queued", "file": name, "doc_id": doc_id, "log": [], "error": None,
+                         "started_at": time.time(), "finished_at": None}
+        threading.Thread(target=_ingest_job, args=(path, doc_id), daemon=True).start()
+        return {"status": "queued", "file": name, "doc_id": doc_id}
+
+    @app.get("/ingest/status")
+    def ingest_status() -> Dict[str, Any]:
+        st = S()
+        j = dict(st.ingest)
+        j["log_tail"] = list(j.pop("log"))[-15:]
+        j["elapsed_s"] = round((j["finished_at"] or time.time()) - j["started_at"], 1) if j["started_at"] else None
+        return j
 
     return app
 
