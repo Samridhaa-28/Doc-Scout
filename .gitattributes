@@ -1,0 +1,2 @@
+# keep generated PDFs byte-exact (they are ASCII-only, so git would otherwise convert their line endings)
+*.pdf binary
