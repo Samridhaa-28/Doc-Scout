@@ -3,7 +3,7 @@
 Three equal parts. Ownership follows the real files in the repository (line counts from the files at commit time).
 Shared by all three: `README.md`, `configs/config.yaml`, `docs/PHASES.md`, `docs/PROGRESS.md`, the phase reports and this final package.
 
-## Member 1: [Name 1] ([Roll 1]): Ingestion, parsing, indexing, data and qrels
+## Member 1: Aarthi NJ (22PD01): Ingestion, parsing, indexing, data and qrels
 
 Phases: P1 setup + schema, P2 parsing/serialization/graph, P3 indexes, P4 data subset, qrels, ingest isolation
 
@@ -43,7 +43,7 @@ Files owned (33 files, 3,622 lines):
 - `tests/test_ingest_isolation.py`
 - `tests/test_indexing.py`
 
-## Member 2: [Name 2] ([Roll 2]): Retrieval, fusion, rerank, slots, table locator, graph context, evaluation
+## Member 2: Anuvarsana K (22PD06): Retrieval, fusion, rerank, slots, table locator, graph context, evaluation
 
 Phases: P4 metrics + baselines, P5 classifier/fusion/rerank/tuning/ablation, P6 locator, graph context, slots, ANLS + locator eval, P7 feedback eval
 
@@ -74,7 +74,7 @@ Files owned (24 files, 3,570 lines):
 - `tests/test_eval.py`
 - `tests/test_split.py`
 
-## Member 3: [Name 3] ([Roll 3]): LLM answering and grounding, feedback, API, React UI, tests
+## Member 3: Samridhaa R (22PD29): LLM answering and grounding, feedback, API, React UI, tests
 
 Phases: P5 LLM client, P6 prompts/answerer/provenance/pipeline/ask.py, P7 Rocchio, memory, cell boxes, API, UI
 

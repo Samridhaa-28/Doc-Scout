@@ -28,7 +28,8 @@ OUT = ROOT / "docs" / "final"
 # ------------------------------------------------------------------ fill these in
 TITLE = "DocScout"
 SUBTITLE = "Query-Aware Fine-Grained Evidence Retrieval from Long Documents"
-TEAM = [("[Name 1]", "[Roll 1]"), ("[Name 2]", "[Roll 2]"), ("[Name 3]", "[Roll 3]")]
+TEAM = [("Aarthi NJ", "22PD01"), ("Anuvarsana K", "22PD06"), ("Samridhaa R", "22PD29")]
+ABSTRACT_TITLE = "DocScout-X"   # the abstract follows the team's IR package format (title as in their draft)
 
 # ------------------------------------------------------------------ styles
 ss = getSampleStyleSheet()
@@ -758,47 +759,56 @@ npm --prefix ui run dev        (open http://localhost:5173)
 
 
 # ------------------------------------------------------------------ abstract (1 page)
-def build_abstract() -> Path:
+def build_abstract(body_size: float = 11.0) -> Path:
+    """One-page abstract in the team's IR package format (layout of their DocScout-X draft: Letter, Arial-like,
+    bold centred title + subtitle, bold inline section labels). Every number is a final TEST number from the repo."""
+    from reportlab.lib.pagesizes import letter
+
     path = OUT / "Abstract.pdf"
+    lead = body_size * 1.27
+    T1 = ParagraphStyle("a_t1", fontName="Helvetica-Bold", fontSize=16, leading=19, alignment=TA_CENTER, spaceAfter=2)
+    T2 = ParagraphStyle("a_t2", fontName="Helvetica-Bold", fontSize=12.5, leading=15, alignment=TA_CENTER, spaceAfter=9)
+    B = ParagraphStyle("a_b", fontName="Helvetica", fontSize=body_size, leading=lead, alignment=0, spaceAfter=5.5)
+    BL = ParagraphStyle("a_bl", parent=B, alignment=0, leftIndent=16, bulletIndent=4, spaceAfter=1.2)
     names = ", ".join(n for n, _ in TEAM)
-    rolls = ", ".join(r for _, r in TEAM)
-    H = ParagraphStyle("ah", parent=BODY, fontName="Helvetica-Bold", fontSize=10.5, textColor=ACC, spaceBefore=6, spaceAfter=2)
-    B = ParagraphStyle("ab", parent=BODY, fontSize=9.3, leading=12.1, spaceAfter=2)
-    BB = ParagraphStyle("abb", parent=B, leftIndent=11, bulletIndent=1)
-    S = [P(f"<b>{TITLE}: {SUBTITLE}</b>", ParagraphStyle("at", parent=BODY, fontSize=15, leading=19, alignment=TA_CENTER, spaceAfter=6)),
-         P(f"<b>Roll Number:</b> {rolls} &nbsp;|&nbsp; <b>Team members Name:</b> {names}", ParagraphStyle("am", parent=B, alignment=TA_CENTER)),
-         P("Problem Statement", H),
-         P("Question answering over long documents usually returns a whole PDF or page, or a generated answer that cannot be checked. "
-           "Users need the exact paragraph, table cell or figure that answers the question, with its location and a reason it was retrieved.", B),
-         P("Objective", H),
-         P("Retrieve fine-grained, query-aware evidence (paragraph, table cells, figure) within a long document, with provenance "
-           "(page, box, scores, graph path, why-line), and produce a short answer grounded only in that evidence with validated citations; "
-           "let users refine the ranking with relevance feedback.", B),
-         P("Dataset Used", H),
-         P("MP-DocVQA (lmms-lab/MP-DocVQA, val): 49 documents, 250 pages, 293 questions, 2,976 parsed components; split by document "
-           "into DEV (10 docs, 76 q) and TEST (39 docs, 217 q). Qrels: answer page and the components containing a gold answer "
-           "(94.9% coverage). Demo: US Census P60-281 report (31 pages, 344 components).", B),
-         P("Methods Used / Algo Used", H)]
-    S += [Paragraph(t, BB, bulletText="•") for t in [
-        "Docling parsing (layout, TableFormer, RapidOCR) into typed components; table/figure text serialization; document structure graph (networkx).",
-        "Three branch indexes: BM25 + BGE-base-en-v1.5 dense (FAISS) for text, tables, figures; CLIP ViT-B/32 for figure images.",
-        "Query-type classifier (rules + gpt-oss-20b when unsure) setting soft branch weights; min-max normalization; weighted-sum fusion (DEV-tuned).",
-        "Cross-encoder rerank (ms-marco-MiniLM-L-6-v2, top 30); type-conditional modality slots; table cell locator; graph context expansion.",
-        "Grounded LLM answering (gpt-oss-20b, JSON, citation validation, \"Not found\"); provenance why-line.",
-        "Relevance feedback: session Rocchio (q' = alpha q + beta mean(relevant) - gamma mean(non-relevant), re-fuse, rerank) and a capped cross-session memory prior; FastAPI + React UI."]]
-    S += [P("Results (Metrics Used)", H), P("Final TEST numbers (eval/results/summary.md, P6/P7 reports):", B)]
-    S += [Paragraph(t, BB, bulletText="•") for t in [
-        "<b>Component R@1:</b> 0.488 (dense BGE baseline 0.362)",
-        "<b>Component MRR:</b> 0.653 (BGE 0.544; paired t-test p &lt; 0.0001)",
-        "<b>Component nDCG@5:</b> 0.644",
-        "<b>Page R@1 / MRR (documents with >= 2 pages):</b> 0.733 / 0.828 (random 0.270 / 0.501); page nDCG@5: not recorded (nDCG@10 0.869)",
-        "<b>ANLS, baseline (top-1 evidence):</b> 0.486 [0.424, 0.546]",
-        "<b>ANLS, final (top-3 + context + cells):</b> 0.646 [0.585, 0.707]; +0.161 [+0.103, +0.218] over baseline",
-        "<b>ANLS, oracle (gold page, 40 q):</b> 0.791",
-        "<b>Rocchio residual MRR:</b> 0.312 vs 0.289 without feedback (+0.023 [-0.048, +0.091]): <b>not significant on TEST</b>",
-        "<b>Query classifier accuracy:</b> 0.751; <b>table-cell locator hit rate:</b> 0.548"]]
-    doc = SimpleDocTemplate(str(path), pagesize=A4, leftMargin=1.7 * cm, rightMargin=1.7 * cm, topMargin=1.4 * cm,
-                            bottomMargin=1.2 * cm, title=f"{TITLE}: abstract")
+    TB = ParagraphStyle("a_tb", parent=B, leftIndent=34, bulletIndent=20, spaceAfter=0)
+    S = [P(ABSTRACT_TITLE, T1), P(SUBTITLE, T2),
+         P("<b>Team Members:</b>", ParagraphStyle("a_team", parent=B, spaceAfter=1))]
+    S += [Paragraph(f"{r} – {n}", TB, bulletText="●") for n, r in TEAM]
+    S += [Spacer(1, 8),
+         P("<b>Problem Statement:</b> In long documents such as reports, filings and forms, the answer to a question usually sits "
+           "in one paragraph, table cell or chart buried among many pages. Document- or page-level search returns whole files or "
+           "pages, flat-text pipelines lose the layout and table structure, and a generated answer without a pointer to its "
+           "evidence cannot be checked.", B),
+         P("<b>Objective:</b> Build a query-aware retrieval system that decides whether a question is textual, numerical or "
+           "visual, retrieves the exact evidence component (paragraph, table and its matching cells, or figure) inside the "
+           "document, explains why each item was retrieved (page, box, scores, section path), answers only from that evidence "
+           "with citations, and improves the ranking within a session from the user's relevance feedback.", B),
+         P("<b>Dataset Used:</b> MP-DocVQA (Hugging Face lmms-lab/MP-DocVQA, validation split): 49 multi-page documents, "
+           "250 pages, 293 questions, parsed into 2,976 components; split by document into DEV (10 documents, 76 questions, "
+           "used for all tuning) and TEST (39 documents, 217 questions). Relevance labels: the answer page and every component "
+           "that contains a gold answer (94.9% of questions covered). Demo document: US Census report P60-281 (31 pages).", B),
+         P("<b>Methods Used / Algo Used:</b> Docling layout parsing with TableFormer and RapidOCR into typed components, each "
+           "serialized to text and linked in a document structure graph (networkx). Three index branches (text, table, figure) "
+           "with BM25 and BGE-base-en-v1.5 dense retrieval (FAISS), plus CLIP ViT-B/32 image embeddings for figures. A query-type "
+           "classifier (rules, LLM when unsure) sets soft branch weights; scores are min-max normalized and combined by weighted-sum "
+           "fusion (Reciprocal Rank Fusion as comparison), then the top 30 are reranked by a cross-encoder "
+           "(ms-marco-MiniLM-L-6-v2). Numerical questions get table cell localization; graph context expansion adds the section "
+           "heading, caption and neighbours; an LLM (gpt-oss-20b) answers only from the numbered evidence with validated "
+           "citations or says \"Not found\". Relevance feedback uses session Rocchio query expansion and a capped cross-session "
+           "memory prior. Served by FastAPI with a React UI that highlights the evidence on the page.", B),
+         P("<b>Results (Metrics Used):</b> final pipeline on the TEST split (component = evidence-level retrieval):",
+           ParagraphStyle("a_rh", parent=B, spaceAfter=2.5))]
+    S += [Paragraph(t, BL, bulletText="•") for t in [
+        "<b>Recall@1 (component):</b> 0.488 (dense BGE baseline 0.362)",
+        "<b>MRR (component):</b> 0.653 (dense BGE baseline 0.544; paired t-test p &lt; 0.0001)",
+        "<b>nDCG@5 (component):</b> 0.644",
+        "<b>Recall@1 / MRR (page level):</b> 0.733 / 0.828 (random baseline 0.270 / 0.501)",
+        "<b>ANLS (answer accuracy):</b> 0.646 final vs 0.486 top-1 baseline (+0.161) and 0.791 oracle",
+        "<b>Query-type classifier accuracy:</b> 75.1%",
+        "<b>Rocchio feedback, residual MRR:</b> 0.312 vs 0.289 without feedback (+0.023, not significant on TEST)"]]
+    doc = SimpleDocTemplate(str(path), pagesize=letter, leftMargin=0.95 * 72, rightMargin=0.95 * 72, topMargin=0.75 * 72,
+                            bottomMargin=0.6 * 72, title=f"{ABSTRACT_TITLE}: abstract", author=names)
     doc.build(S)
     return path
 
