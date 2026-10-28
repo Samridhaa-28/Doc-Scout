@@ -11,7 +11,7 @@ Everything for submission is in [docs/final/](docs/final/):
 - [DocScout_Project_Report.pdf](docs/final/DocScout_Project_Report.pdf): the detailed project report (problem, end-to-end flow, repository map, every stage, datasets, outputs, models, all evaluations, UI walkthrough, tests, limitations, how to run, contributions).
 - [Abstract.pdf](docs/final/Abstract.pdf): one-page abstract.
 - [CONTRIBUTIONS.md](docs/final/CONTRIBUTIONS.md): the three-way contribution split with the files each member owns.
-- `build_final_docs.py`: rebuilds the three files from repo data (`.venv/Scripts/python docs/final/build_final_docs.py`, needs `reportlab`); team names and the subtitle are set at the top of the script. It runs no evaluation and calls no LLM.
+- `build_final_docs.py`: rebuilds the report and CONTRIBUTIONS.md from repo data (`.venv/Scripts/python docs/final/build_final_docs.py`, needs `reportlab`); team names and the subtitle are set at the top of the script. It runs no evaluation and calls no LLM. `Abstract.pdf` is the team's edited final version and is not overwritten (pass `--abstract` to regenerate it).
 
 ## Setup (Windows)
 

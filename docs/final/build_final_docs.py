@@ -3,6 +3,7 @@
 No evaluation is run and no LLM is called: every number below is copied from a repo file, cited next to it
 (P1-P7 reports, eval/results/summary.md, eval/results/*.json, configs/config.yaml, split.json, README).
 Fill in TEAM / SUBTITLE and rerun:  .venv/Scripts/python docs/final/build_final_docs.py
+(Abstract.pdf is the team's edited version and is kept; add --abstract to regenerate it from this script.)
 """
 from __future__ import annotations
 
@@ -820,7 +821,8 @@ def main() -> int:
     contrib = contributions(lines)
     write_contributions_md(contrib)
     rep = build_report(fp, contrib)
-    ab = build_abstract()
+    # docs/final/Abstract.pdf is the team's own final version: regenerate it only on request
+    ab = build_abstract() if "--abstract" in sys.argv else OUT / "Abstract.pdf"
     import pymupdf
 
     for p in (rep, ab):
